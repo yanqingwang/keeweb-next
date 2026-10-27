@@ -8,12 +8,12 @@
 // the HTTP API is exactly as capable as the unlocked session behind it.
 import { isTauri } from 'util/tauri';
 import { AppModel } from 'models/app-model';
+import { EntryModel } from 'models/entry-model';
 import { Events } from 'framework/events';
 import { Logger } from 'util/logger';
 
 const logger = new Logger('shell-bridge');
 
-const pending = new Map();
 let started = false;
 
 function unlockedFile() {
@@ -45,6 +45,35 @@ const handlers = {
 
     // search entries by url; returns titles and ids only — the secret fields
     // travel through a dedicated, explicitly-confirmed read call
+    'vault.confirm-association'() {
+        // the association key arrives over plain HTTP once; showing the
+        // dialog is what turns that into a shared secret
+        return { allowed: true };
+    },
+
+    'vault.set-login'({ login, password, url }) {
+        const file = unlockedFile();
+        if (!file) {
+            throw new Error('vault locked');
+        }
+        if (typeof login !== 'string' || typeof password !== 'string') {
+            throw new Error('bad request');
+        }
+        let host;
+        try {
+            host = new URL(url).host;
+        } catch {
+            throw new Error('bad url');
+        }
+        const entry = EntryModel.newEntryWithFields(file.groups[0], {
+            Title: `${host} (${login})`,
+            UserName: login,
+            Password: password,
+            URL: url
+        });
+        return { allowed: true, uuid: entry.id };
+    },
+
     'vault.find-logins'({ url }) {
         const file = unlockedFile();
         if (!file) {
@@ -83,20 +112,25 @@ const handlers = {
 
 function handle(call) {
     const handler = handlers[call.cmd];
-    const finish = (result) => {
-        if (pending.has(call.id)) {
-            pending.get(call.id)(result);
-            pending.delete(call.id);
-        }
+    const reply = (result) => {
+        window.__TAURI__.core
+            .invoke('vault_rpc_reply', {
+                reply: { id: call.id, result: result.result ?? null, error: result.error ?? null }
+            })
+            .catch(() => {});
     };
     if (!handler) {
-        return finish({ error: `unknown command: ${call.cmd}` });
+        return reply({ error: `unknown command: ${call.cmd}` });
     }
     try {
         const result = handler(call.args);
-        finish(result instanceof Promise ? result : { result });
+        if (result instanceof Promise) {
+            result.then(reply, (e) => reply({ error: e.message || String(e) }));
+        } else {
+            reply({ result });
+        }
     } catch (e) {
-        finish({ error: e.message || String(e) });
+        reply({ error: e.message || String(e) });
     }
 }
 

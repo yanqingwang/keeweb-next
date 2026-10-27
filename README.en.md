@@ -85,14 +85,33 @@ flowchart LR
 
 ## Not done yet / roadmap
 
-* **Local HTTP API (KeePassHTTP compatible)** — next milestone, inside the
-  shell process.
 * Phone: the Tauri 2 Android/iOS targets (icons already generated) plus a
   round of mobile UI adaptation.
+* Persisting association keys (they are process-local today, by design — a
+  restart re-pairs; nothing touches the disk).
 * Official browser-extension pairing for autofill (the KeeWeb Connect
-  extension already works with web-mode postMessage).
+  extension already works with web-mode postMessage; the KeePassHTTP
+  endpoint is live).
 * Auto-update, tray, global shortcuts, auto-type: Electron-era features, not
   migrated yet.
+
+## Local HTTP API (KeePassHTTP compatible)
+
+The shell listens on `127.0.0.1:19455` and speaks the KeePassHTTP protocol
+(pfn/keepasshttp), so existing browser extensions connect without changes:
+
+* `associate`: the extension submits a 256-bit AES key; **the webview shows a
+  confirmation dialog** and only an approval stores it. The returned Id is
+  the SHA-1 of the key.
+* `test-associate` / `get-logins` / `get-logins-count` / `set-login`: all
+  encrypted with the shared key and a per-request random nonce; the Verifier
+  check rejects replays.
+* Every response carries the database identity (`Hash`), so extensions can
+  detect a database change.
+* Security boundaries: loopback binding only (non-loopback connections are
+  dropped before a handshake), request bodies ≤1 MB, 30-second read/write
+  timeouts, associations held in process memory only, and `get-logins`
+  answers "database is locked" while the vault is locked.
 
 ## Build
 

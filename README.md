@@ -71,10 +71,25 @@ flowchart LR
 
 ## 尚未完成 / 路线图
 
-* **本机 HTTP API（KeePassHTTP 兼容）** —— 下一里程碑，壳进程内实现。
 * 手机端：Tauri 2 的 Android/iOS 目标（图标已生成），UI 需要一轮移动端适配。
-* 自动填充浏览器插件的官方对接（KeeWeb Connect 扩展已兼容 web 模式 postMessage）。
+* 关联密钥的持久化（当前为进程内存储，重启后需重新配对；设计上不落盘）。
+* 自动填充浏览器插件的官方对接（KeeWeb Connect 扩展已兼容 web 模式 postMessage；
+  KeePassHTTP 端点已可用）。
 * 自动更新、托盘、全局快捷键、auto-type：Electron 时代功能，暂未迁移。
+
+## 本机 HTTP API（KeePassHTTP 兼容）
+
+壳进程监听 `127.0.0.1:19455`，实现 KeePassHTTP 协议（pfn/keepasshttp），
+现有浏览器插件无需修改即可连接：
+
+* `associate`：插件提交 256-bit AES 密钥，**webview 内弹窗人工确认**后才会保存；
+  返回的 Id 是密钥的 SHA-1。
+* `test-associate` / `get-logins` / `get-logins-count` / `set-login`：
+  全部使用共享密钥 + 每请求随机 Nonce 加密，Verifier 校验防重放。
+* 数据库标识（Hash）随每个响应返回，插件可感知数据库更换。
+* 安全边界：只绑 127.0.0.1、非回环连接直接丢弃、请求体 ≤1MB、
+  读写超时 30s；关联密钥仅存进程内存，应用退出即失效；
+  `get-logins` 只在库解锁时有结果，锁定时明确报 "database is locked"。
 
 ## 构建
 

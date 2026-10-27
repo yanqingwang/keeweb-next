@@ -26,7 +26,9 @@ pub const PORT: u16 = 19455;
 /// Where associated keys are stored inside the vault ("KeePassHttp Settings"
 /// entry), matching the upstream plugin. Used by the webview side when it
 /// persists an approved association.
+#[allow(dead_code)] // the webview side uses it when persisting approvals
 pub const ASSOCIATE_KEY_PREFIX: &str = "AES Key: ";
+
 /// Enforced by the HTTP layer once the listener is wired into the shell.
 pub const MAX_REQUEST_BODY: usize = 1 << 20;
 
@@ -51,8 +53,11 @@ fn decrypt(cipher_text: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, &'stati
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[allow(dead_code)] // the wire format carries more than the handlers read
 pub struct Request {
     pub request_type: String,
+    // part of the wire format; plugins always send them, the handlers do
+    // not branch on them
     #[serde(default)]
     pub trigger_unlock: bool,
     #[serde(default)]
@@ -125,6 +130,7 @@ pub struct Association {
 #[derive(Debug)]
 pub struct VaultQuery {
     pub url: String,
+    #[allow(dead_code)] // handed to the webview for host-based permissions
     pub submit_url: Option<String>,
 }
 
@@ -157,7 +163,7 @@ pub enum VaultRequest {
         login: String,
         password: String,
         url: String,
-        submit_url: Option<String>,
+        #[allow(dead_code)] // the webview records which association wrote
         association_id: String,
     },
 }
@@ -593,7 +599,6 @@ pub fn handle_request(state: &ServerState, request: Request) -> Response {
                     login,
                     password,
                     url: url.clone(),
-                    submit_url: None,
                     association_id: association.id.clone(),
                 })
                 .unwrap_or_else(|_| VaultAnswer {

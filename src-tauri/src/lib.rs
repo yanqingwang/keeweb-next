@@ -1,3 +1,4 @@
+pub mod config_store;
 pub mod keepasshttp;
 pub mod vault_bridge;
 pub mod webdav;
@@ -93,10 +94,20 @@ pub fn run() {
         vault_rpc_reply,
         window_minimize,
         window_toggle_maximize,
-        window_close
+        window_close,
+        config_store::config_load,
+        config_store::config_save
     ])
         .setup(|app| {
             let handle = app.handle().clone();
+            let config_dir = app
+                .path()
+                .app_data_dir()
+                .map(|dir| dir.join("config"))
+                .map_err(|e| e.to_string())?;
+            let store = std::sync::Arc::new(config_store::ConfigStore::default());
+            store.init(config_dir);
+            app.manage(config_store::State(store.clone()));
             let replies = std::sync::Arc::new(Replies::new());
             app.manage(replies.clone());
             let vault = WebviewVault::new(handle.clone(), replies);

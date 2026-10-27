@@ -41,6 +41,14 @@ const Launcher = {
 
     mainWindowMaximized() {
         return false;
+    },
+
+    loadConfig(key) {
+        return invoke('config_load', { key }).catch(() => null);
+    },
+
+    saveConfig(key, data) {
+        return invoke('config_save', { key, data }).catch(() => {});
     }
 };
 

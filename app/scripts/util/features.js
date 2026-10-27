@@ -1,7 +1,8 @@
 const MobileRegex = /iPhone|iPad|iPod|Android|BlackBerry|Opera Mini|IEMobile|WPDesktop|Windows Phone|webOS/i;
 const MinDesktopScreenWidth = 800;
 
-const isDesktop = !!(window.process && window.process.versions && window.process.versions.electron);
+// the Electron build is gone; every environment is a browser or a webview
+const isDesktop = false;
 
 const Features = {
     isDesktop,

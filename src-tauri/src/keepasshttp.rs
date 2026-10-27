@@ -269,6 +269,15 @@ pub fn serve(state: std::sync::Arc<ServerState>, app: tauri::AppHandle) {
         .expect("the KeePassHTTP port is already in use");
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
+        // the API exists for browser extensions on this machine; anything
+        // arriving from another interface is dropped before a handshake
+        if !stream
+            .peer_addr()
+            .map(|addr| addr.ip().is_loopback())
+            .unwrap_or(false)
+        {
+            continue;
+        }
         let state = state.clone();
         let app = app.clone();
         std::thread::spawn(move || {
@@ -283,6 +292,7 @@ fn serve_one(
     app: tauri::AppHandle,
 ) -> std::io::Result<()> {
     let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(30)));
+    let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(30)));
     let mut buffer = Vec::new();
     let mut chunk = [0u8; 4096];
     let header_end = loop {

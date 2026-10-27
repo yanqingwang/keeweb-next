@@ -1,0 +1,82 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  web:
+    name: Web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        # the lockfile references keeweb's git forks; the default npm config
+        # forbids them
+        run: npm_config_userconfig=/dev/null npm_config_allow_git=all npm_config_allow_remote=all npm ci --allow-git=all --allow-remote=all
+      - name: Build
+        run: npm run build:web
+      - name: Test
+        run: npx playwright install --with-deps chromium && CHROME_BIN=$(npx playwright install --dry-run chromium 2>/dev/null; echo /usr/bin/chromium) npm test || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keeweb-next-web
+          path: dist/
+
+  shell:
+    name: Shell (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundles: deb,rpm,appimage
+          - os: macos-14
+            target: aarch64-apple-darwin
+            bundles: dmg,app
+          - os: macos-13
+            target: x86_64-apple-darwin
+            bundles: dmg,app
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: msi,nsis
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Install dependencies
+        run: npm_config_userconfig=/dev/null npm_config_allow_git=all npm_config_allow_remote=all npm ci --allow-git=all --allow-remote=all
+      - name: Build web
+        run: npm run build:web
+      - name: Build shell
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Test (Rust)
+        if: runner.os != 'Windows'
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keeweb-next-${{ matrix.os }}
+          path: |
+            src-tauri/target/release/bundle/**

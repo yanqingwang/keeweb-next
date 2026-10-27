@@ -1,5 +1,7 @@
 # KeeWeb Next
 
+[中文](README.md) | [English](README.en.md)
+
 本地优先（local-first）的 KeePass 密码库客户端，跑在系统自带的 WebView 里，没有 Electron。
 通过 WebDAV 打开 `.kdbx`（坚果云 / Nextcloud / 任何 WebDAV 服务），电脑与手机用同一份数据库，
 浏览器插件与 KeePass 插件通过本机 HTTP 接口直连。

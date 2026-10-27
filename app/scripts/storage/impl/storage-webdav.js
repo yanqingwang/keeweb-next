@@ -1,6 +1,7 @@
 import * as kdbxweb from 'kdbxweb';
 import { StorageBase } from 'storage/storage-base';
 import { Locale } from 'util/locale';
+import { isTauri, invoke } from 'util/tauri';
 
 class StorageWebDav extends StorageBase {
     name = 'webdav';
@@ -292,7 +293,111 @@ class StorageWebDav extends StorageBase {
         return result;
     }
 
+    // The webview shell makes the request itself, so there is no CORS policy
+    // and no browser proxy in the way. The response is shaped like the XHR the
+    // rest of this file expects.
+    _requestShell(config, callback) {
+        this.logger.debug(config.op, config.path);
+        const ts = this.logger.ts();
+
+        const headers = Object.assign({}, config.headers);
+        if (config.user) {
+            headers.Authorization = 'Basic ' + btoa(config.user + ':' + config.password);
+        }
+
+        const bodyPromise = config.data
+            ? Promise.resolve(config.data).then((data) =>
+                  kdbxweb.ByteUtils.bytesToBase64(
+                      new Uint8Array(data instanceof Blob ? data.arrayBuffer() : data)
+                  )
+              )
+            : Promise.resolve(null);
+
+        bodyPromise
+            .then((body) =>
+                invoke('webdav_request', {
+                    request: {
+                        method: config.method,
+                        url: config.path,
+                        headers,
+                        body
+                    }
+                })
+            )
+            .then((response) => {
+                const bytes = kdbxweb.ByteUtils.base64ToBytes(response.body);
+                const xhr = {
+                    status: response.status,
+                    responseType: 'arraybuffer',
+                    response: bytes.buffer,
+                    getResponseHeader: (name) => {
+                        const value = response.headers[name.toLowerCase()];
+                        return value === undefined ? null : value;
+                    }
+                };
+
+                if ([200, 201, 204].indexOf(xhr.status) < 0) {
+                    this.logger.debug(
+                        config.op + ' error',
+                        config.path,
+                        xhr.status,
+                        this.logger.ts(ts)
+                    );
+                    let err;
+                    switch (xhr.status) {
+                        case 404:
+                            err = { notFound: true };
+                            break;
+                        case 412:
+                            err = { revConflict: true };
+                            break;
+                        default:
+                            err = 'HTTP status ' + xhr.status;
+                            break;
+                    }
+                    if (callback) {
+                        callback(err, xhr);
+                        callback = null;
+                    }
+                    return;
+                }
+
+                const rev = xhr.getResponseHeader('Last-Modified');
+                if (!rev && !config.nostat) {
+                    this.logger.debug(
+                        config.op + ' error',
+                        config.path,
+                        'no headers',
+                        this.logger.ts(ts)
+                    );
+                    if (callback) {
+                        callback(Locale.webdavNoLastModified, xhr);
+                        callback = null;
+                    }
+                    return;
+                }
+
+                const completedOpName =
+                    config.op + (config.op.charAt(config.op.length - 1) === 'e' ? 'd' : 'ed');
+                this.logger.debug(completedOpName, config.path, rev, this.logger.ts(ts));
+                if (callback) {
+                    callback(null, xhr, rev ? { rev } : null);
+                    callback = null;
+                }
+            })
+            .catch((e) => {
+                this.logger.debug(config.op + ' error', config.path, this.logger.ts(ts));
+                if (callback) {
+                    callback('network error: ' + e, null);
+                    callback = null;
+                }
+            });
+    }
+
     _request(config, callback) {
+        if (isTauri) {
+            return this._requestShell(config, callback);
+        }
         if (config.rev) {
             this.logger.debug(config.op, config.path, config.rev);
         } else {

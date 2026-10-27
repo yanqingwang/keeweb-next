@@ -1,0 +1,37 @@
+# Maintainer: yanqingwang
+pkgname=keeweb-next
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='KeeWeb as a web app, with an optional Tauri webview shell (WebDAV without CORS limits)'
+arch=('x86_64' 'aarch64')
+url='https://github.com/keeweb/keeweb'
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3')
+makedepends=('git' 'rust' 'nodejs' 'npm' 'clang' 'cmake' 'ninja' 'pkgconf')
+backup=('etc/keeweb-next/config.json')
+source=("$pkgname::git+https://github.com/keeweb/keeweb.git")
+sha256sums=('SKIP')
+
+build() {
+    cd "$pkgname"
+
+    npm_config_userconfig=/dev/null \
+    npm_config_allow_git=all \
+    npm_config_allow_remote=all \
+        npm ci --allow-git=all --allow-remote=all
+    npm run build:web
+
+    cd src-tauri
+    cargo build --release
+}
+
+package() {
+    cd "$pkgname"
+
+    install -d "$pkgdir/usr/share/keeweb-next"
+    cp -a dist "$pkgdir/usr/share/keeweb-next/dist"
+
+    install -Dm755 src-tauri/target/release/keeweb-next \
+        "$pkgdir/usr/bin/keeweb-next"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

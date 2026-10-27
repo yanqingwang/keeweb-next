@@ -23,10 +23,6 @@ const StartProfiler = {
         this.printReport('App', operations, time);
     },
 
-    reportAppProfile(data) {
-        this.printReport('Electron app', data.timings, data.totalTime);
-    },
-
     printReport(name, operations, totalTime) {
         const message =
             `${name} started in ${totalTime}ms: ` +

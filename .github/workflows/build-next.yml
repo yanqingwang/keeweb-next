@@ -19,7 +19,11 @@ jobs:
       - name: Install dependencies
         # the lockfile references keeweb's git forks; the default npm config
         # forbids them
-        run: npm_config_userconfig=/dev/null npm_config_allow_git=all npm_config_allow_remote=all npm ci --allow-git=all --allow-remote=all
+        env:
+          npm_config_userconfig: /dev/null
+          npm_config_allow_git: all
+          npm_config_allow_remote: all
+        run: npm ci --allow-git=all --allow-remote=all
       - name: Build
         run: npm run build:web
       - name: Test
@@ -63,7 +67,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
       - name: Install dependencies
-        run: npm_config_userconfig=/dev/null npm_config_allow_git=all npm_config_allow_remote=all npm ci --allow-git=all --allow-remote=all
+        env:
+          npm_config_userconfig: /dev/null
+          npm_config_allow_git: all
+          npm_config_allow_remote: all
+        run: npm ci --allow-git=all --allow-remote=all
       - name: Build web
         run: npm run build:web
       - name: Build shell

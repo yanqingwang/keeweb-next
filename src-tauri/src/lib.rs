@@ -36,6 +36,26 @@ fn vault_rpc_reply(
     Ok(())
 }
 
+/// Window controls for the in-page titlebar (macOS traffic-light style).
+#[tauri::command]
+fn window_minimize(window: tauri::Window) -> Result<(), String> {
+    window.minimize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn window_toggle_maximize(window: tauri::Window) -> Result<(), String> {
+    if window.is_maximized().map_err(|e| e.to_string())? {
+        window.unmaximize().map_err(|e| e.to_string())
+    } else {
+        window.maximize().map_err(|e| e.to_string())
+    }
+}
+
+#[tauri::command]
+fn window_close(window: tauri::Window) -> Result<(), String> {
+    window.close().map_err(|e| e.to_string())
+}
+
 /// Waiters for in-flight vault RPC calls.
 pub struct Replies {
     waiters: std::sync::Mutex<HashMap<u64, mpsc::SyncSender<VaultRpcReply>>>,
@@ -68,7 +88,13 @@ impl Replies {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![webdav_request, vault_rpc_reply])
+        .invoke_handler(tauri::generate_handler![
+        webdav_request,
+        vault_rpc_reply,
+        window_minimize,
+        window_toggle_maximize,
+        window_close
+    ])
         .setup(|app| {
             let handle = app.handle().clone();
             let replies = std::sync::Arc::new(Replies::new());

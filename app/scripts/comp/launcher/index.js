@@ -1,6 +1,9 @@
-// The desktop build used to expose an Electron launcher here. The webview
-// shell keeps the same web APIs the browser build uses, so there is no
-// platform launcher to select.
+// The desktop form is the Tauri webview shell; it exposes window.__TAURI__
+// before any app script runs. Everything else is the plain browser build.
 let Launcher;
+
+if (window.__TAURI__) {
+    Launcher = require('./launcher-tauri').Launcher;
+}
 
 export { Launcher };

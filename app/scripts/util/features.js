@@ -1,8 +1,10 @@
 const MobileRegex = /iPhone|iPad|iPod|Android|BlackBerry|Opera Mini|IEMobile|WPDesktop|Windows Phone|webOS/i;
 const MinDesktopScreenWidth = 800;
 
-// the Electron build is gone; every environment is a browser or a webview
-const isDesktop = false;
+// the Electron build is gone; the desktop form is the Tauri webview shell,
+// which injects window.__TAURI__ before any app script runs
+const isShell = !!window.__TAURI__;
+const isDesktop = isShell;
 
 const Features = {
     isDesktop,
@@ -25,7 +27,10 @@ const Features = {
         return isDesktop && this.isMac;
     },
     get renderCustomTitleBar() {
-        return isDesktop && this.isWindows;
+        // Windows draws its own controls in the titlebar; on macOS the
+        // traffic lights overlay the content (titleBarStyle: Overlay), so
+        // the webview shell renders the custom titlebar there as well
+        return isDesktop && (this.isWindows || this.isMac);
     },
     get hasUnicodeFlags() {
         return this.isMac;

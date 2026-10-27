@@ -3,7 +3,7 @@
     {{#if customTitlebar}}
         <div class="app__titlebar"></div>
     {{else}}
-        {{#ifeq titlebarStyle 'hidden'}}<div class="app__titlebar-drag"></div>{{/ifeq}}
+        {{#ifeq titlebarStyle 'hidden'}}<div class="app__titlebar-drag" data-tauri-drag-region></div>{{/ifeq}}
     {{/if}}
     <div class="app__body">
         <div class="app__menu"></div>

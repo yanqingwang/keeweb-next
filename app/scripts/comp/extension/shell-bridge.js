@@ -142,7 +142,6 @@ function start() {
     window.__TAURI__.event.listen('vault-rpc', (event) => handle(event.payload));
     logger.info('Shell bridge started');
 }
-
 Events.on('app-ready', start);
 
 const ShellBridge = {

@@ -88,3 +88,4 @@ jobs:
           name: keeweb-next-${{ matrix.os }}
           path: |
             src-tauri/target/release/bundle/**
+            src-tauri/target/*/release/bundle/**

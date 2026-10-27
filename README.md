@@ -111,6 +111,23 @@ npm test                                     # 浏览器测试（需要 CHROME_B
 
 `npm test` 用 puppeteer 起浏览器；系统 Chromium 时设置 `CHROME_BIN=/usr/bin/chromium`。
 
+## macOS 支持
+
+壳是 Tauri 2 + 系统 WKWebView（不捆绑任何运行时，二进制 ~10MB）：
+
+* 窗口使用 `titleBarStyle: Overlay` + `hiddenTitle`——红绿灯悬浮在内容之上，
+  标题隐藏，与应用本体融为一体；`acceptFirstMouse` 让未聚焦窗口首击直达。
+* 应用内标题栏（最小化/最大化/关闭）走 `window_minimize` /
+  `window_toggle_maximize` / `window_close` 命令；macOS 上同样渲染。
+* 拖拽：`titlebarStyle: hidden` 下的拖动条带带 `data-tauri-drag-region`。
+* 图标：`icon.icns` 随包安装。
+* 设置持久化在 `~/Library/Application Support/info.keeweb.next/config/`。
+* CI 在 `macos-14`（Apple Silicon）与 `macos-13`（Intel）原生编译并出
+  dmg/app 包（见 `.github/workflows/build-next.yml`）。
+
+未迁移的 macOS 专属能力：Touch ID / 硬件加密存储（原 Electron
+hardware-crypto）、auto-type、全局快捷键、托盘。
+
 ## 安装（Arch Linux）
 
 ```bash

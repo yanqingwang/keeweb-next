@@ -135,6 +135,27 @@ npm test                                     # browser tests (see CHROME_BIN bel
 `npm test` launches puppeteer; with a system Chromium set
 `CHROME_BIN=/usr/bin/chromium`.
 
+## macOS support
+
+The shell is Tauri 2 + the system WKWebView (no bundled runtime, ~10 MB
+binary):
+
+* The window uses `titleBarStyle: Overlay` with `hiddenTitle` — the traffic
+  lights float over the content and the title is hidden; `acceptFirstMouse`
+  lets the first click on an unfocused window land in the webview.
+* The in-app titlebar (minimize/maximize/close) goes through the
+  `window_minimize` / `window_toggle_maximize` / `window_close` commands and
+  renders on macOS too.
+* Dragging: the hidden-titlebar strip carries `data-tauri-drag-region`.
+* Icons: `icon.icns` ships in the bundle.
+* Settings persist under
+  `~/Library/Application Support/info.keeweb.next/config/`.
+* CI builds natively on `macos-14` (Apple Silicon) and `macos-13` (Intel) and
+  produces dmg/app bundles (`.github/workflows/build-next.yml`).
+
+Not migrated yet: Touch ID / hardware-crypto storage (the Electron
+hardware-crypto module), auto-type, global shortcuts, tray.
+
 ## Install (Arch Linux)
 
 ```bash

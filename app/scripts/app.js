@@ -7,6 +7,7 @@ import { SingleInstanceChecker } from 'comp/app/single-instance-checker';
 import { Updater } from 'comp/app/updater';
 import { UsbListener } from 'comp/app/usb-listener';
 import { BrowserExtensionConnector } from 'comp/extension/browser-extension-connector';
+import { ShellBridge } from 'comp/extension/shell-bridge';
 import { FeatureTester } from 'comp/browser/feature-tester';
 import { FocusDetector } from 'comp/browser/focus-detector';
 import { IdleTracker } from 'comp/browser/idle-tracker';
@@ -194,6 +195,7 @@ ready(() => {
         StartProfiler.milestone('first view rendering');
 
         Events.emit('app-ready');
+        ShellBridge.start();
         StartProfiler.milestone('app ready event');
 
         StartProfiler.report();

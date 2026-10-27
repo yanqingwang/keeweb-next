@@ -4,12 +4,12 @@ pkgver=0.1.0
 pkgrel=1
 pkgdesc='KeeWeb as a web app, with an optional Tauri webview shell (WebDAV without CORS limits)'
 arch=('x86_64' 'aarch64')
-url='https://github.com/keeweb/keeweb'
+url='https://github.com/yanqingwang/keeweb-next'
 license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3')
 makedepends=('git' 'rust' 'nodejs' 'npm' 'clang' 'cmake' 'ninja' 'pkgconf')
 backup=('etc/keeweb-next/config.json')
-source=("$pkgname::git+https://github.com/keeweb/keeweb.git")
+source=("$pkgname::git+https://github.com/yanqingwang/keeweb-next.git")
 sha256sums=('SKIP')
 
 build() {

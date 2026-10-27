@@ -3,13 +3,10 @@
 const fs = require('fs-extra');
 const path = require('path');
 const { execSync } = require('child_process');
-const debug = require('debug');
 
 const webpackConfig = require('./build/webpack.config');
 const webpackConfigTest = require('./test/test.webpack.config');
 const pkg = require('./package.json');
-
-debug.enable('electron-notarize');
 
 module.exports = function (grunt) {
     require('time-grunt')(grunt);
@@ -25,10 +22,10 @@ module.exports = function (grunt) {
 
     const dt = date.toISOString().replace(/T.*/, '');
     const year = date.getFullYear();
-    const electronVersion = pkg.dependencies.electron.replace(/^\D/, '');
-    const skipSign = grunt.option('skip-sign');
-    const getCodeSignConfig = () =>
-        skipSign ? { identities: {} } : require('./keys/codesign.json');
+    // kept so the remaining dead desktop config below does not crash; the
+    // Electron build tasks have been removed
+    const electronVersion = '';
+    const getCodeSignConfig = () => ({});
 
     let sha = grunt.option('commit-sha');
     if (!sha) {
@@ -272,11 +269,9 @@ module.exports = function (grunt) {
         },
         eslint: {
             app: ['app/scripts/**/*.js'],
-            desktop: ['desktop/**/*.js', '!desktop/node_modules/**'],
             build: ['Gruntfile.js', 'grunt.*.js', 'build/**/*.js', 'webpack.config.js'],
             plugins: ['plugins/**/*.js'],
-            util: ['util/**/*.js'],
-            installer: ['package/osx/installer.js']
+            util: ['util/**/*.js']
         },
         inline: {
             app: {

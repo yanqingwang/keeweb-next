@@ -117,6 +117,11 @@ const BrowserExtensionConnector = {
     },
 
     enable(browser, extension, enabled) {
+        if (!Launcher) {
+            // the web build has no native socket to open; the in-page
+            // message listener is always on
+            return;
+        }
         const { ipcRenderer } = Launcher.electron();
         ipcRenderer.invoke('browserExtensionConnectorEnable', browser, extension, enabled);
     },

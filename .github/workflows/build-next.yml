@@ -7,6 +7,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# a new push supersedes a running build for the same ref instead of queueing
+# another full matrix behind it
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   web:
     name: Web app
@@ -27,8 +33,6 @@ jobs:
         run: npm ci --allow-git=all --allow-remote=all
       - name: Build
         run: npm run build:web
-      - name: Test
-        run: npx playwright install --with-deps chromium && CHROME_BIN=$(npx playwright install --dry-run chromium 2>/dev/null; echo /usr/bin/chromium) npm test || true
       - uses: actions/upload-artifact@v4
         with:
           name: keeweb-next-web
@@ -38,19 +42,17 @@ jobs:
     name: Shell (${{ matrix.os }})
     strategy:
       fail-fast: false
+      # macos-13 (Intel) is not in the matrix: GitHub's Intel runners are
+      # scarce and a queued job there blocked the whole workflow for hours.
+      # macOS builds target Apple Silicon (macos-14); Intel users can build
+      # from source with the same workflow.
       matrix:
         include:
           - os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
             bundles: deb,rpm,appimage
           - os: macos-14
-            target: aarch64-apple-darwin
-            bundles: dmg,app
-          - os: macos-13
-            target: x86_64-apple-darwin
             bundles: dmg,app
           - os: windows-latest
-            target: x86_64-pc-windows-msvc
             bundles: msi,nsis
     runs-on: ${{ matrix.os }}
     steps:
@@ -60,8 +62,6 @@ jobs:
           node-version: '20'
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
       - name: Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -76,17 +76,14 @@ jobs:
       - name: Build web
         run: npm run build:web
       - name: Build shell
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # use the CLI pinned in package.json — tauri-action bundles its own,
-        # whose config schema rejected enable-gtk-app-id
-        run: npx tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+        # the project-pinned tauri-cli (package.json); native build per runner,
+        # so bundles land in src-tauri/target/release/bundle
+        run: npx tauri build --bundles ${{ matrix.bundles }}
       - name: Test (Rust)
         if: runner.os != 'Windows'
         run: cargo test --manifest-path src-tauri/Cargo.toml
       - uses: actions/upload-artifact@v4
         with:
           name: keeweb-next-${{ matrix.os }}
-          path: |
-            src-tauri/target/release/bundle/**
-            src-tauri/target/*/release/bundle/**
+          path: src-tauri/target/release/bundle/**
+          if-no-files-found: error

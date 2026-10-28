@@ -103,7 +103,6 @@ fn serve_ui(app: tauri::AppHandle) -> u16 {
             let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(10)));
             let mut buffer = Vec::new();
             let mut chunk = [0u8; 4096];
-            let mut chunk = [0u8; 4096];
             let header_end = 'read: loop {
                 match stream.read(&mut chunk) {
                     Ok(0) => break 'read 0usize,
@@ -168,12 +167,10 @@ fn serve_ui(app: tauri::AppHandle) -> u16 {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .on_page_load(|webview, payload| {
-            eprintln!(
-                "[page-load] {:?} {}",
-                payload.event(),
-                payload.url()
-            );
+        .on_page_load(|_webview, payload| {
+            if std::env::var_os("KEEWEB_LOG_PAGE_LOAD").is_some() {
+                eprintln!("[page-load] {:?} {}", payload.event(), payload.url());
+            }
         })
         .invoke_handler(tauri::generate_handler![
         webdav_request,
@@ -185,12 +182,24 @@ pub fn run() {
         config_store::config_save
     ])
         .setup(|app| {
+            // WebKitGTK renders a blank window when the app is loaded through
+            // tauri's custom scheme (the document loads, no script runs), so
+            // the shell serves its embedded assets over loopback http instead.
             let ui_port = serve_ui(app.handle().clone());
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.eval(&format!(
-                    "location.replace('http://127.0.0.1:{}/')"
-                , ui_port));
-            }
+            let url = format!("http://127.0.0.1:{}/", ui_port);
+            let builder = tauri::WebviewWindowBuilder::new(
+                app,
+                "main",
+                tauri::WebviewUrl::External(url.parse().expect("ui url")),
+            )
+            .title("KeeWeb Next")
+            .inner_size(1280.0, 800.0)
+            .min_inner_size(800.0, 600.0);
+            #[cfg(target_os = "macos")]
+            let builder = builder
+                .title_bar_style(tauri::TitleBarStyle::Overlay)
+                .hidden_title(true);
+            let _window = builder.build().map_err(|e| e.to_string())?;
 
             let handle = app.handle().clone();
             let config_dir = app

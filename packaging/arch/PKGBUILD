@@ -13,6 +13,10 @@ options=('!lto')
 source=("$pkgname::git+https://github.com/yanqingwang/keeweb-next.git")
 sha256sums=('SKIP')
 
+# Keep the Rust target dir out of $srcdir: on many systems that is a small
+# tmpfs, and the build needs several GB. Shared across builds.
+_cargo_target="${CARGO_TARGET_DIR:-$HOME/.cache/keeweb-next-target}"
+
 build() {
     cd "$pkgname"
 
@@ -23,9 +27,7 @@ build() {
     npm run build:web
 
     cd src-tauri
-    # /tmp is a small tmpfs; the Rust build needs several GB, so keep the
-    # target dir on the real filesystem
-    CARGO_TARGET_DIR="$srcdir/../cargo-target" cargo build --release
+    CARGO_TARGET_DIR="$_cargo_target" cargo build --release
 }
 
 package() {
@@ -36,7 +38,7 @@ package() {
     install -d "$pkgdir/usr/share/keeweb-next"
     cp -a dist "$pkgdir/usr/share/keeweb-next/dist"
 
-    install -Dm755 "$srcdir/../cargo-target/release/keeweb-next" \
+    install -Dm755 "$_cargo_target/release/keeweb-next" \
         "$pkgdir/usr/bin/keeweb-next"
 
     # desktop application integration

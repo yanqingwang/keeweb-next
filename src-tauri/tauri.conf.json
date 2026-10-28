@@ -9,19 +9,7 @@
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [
-      {
-        "label": "main",
-        "title": "KeeWeb Next",
-        "width": 1280,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600,
-        "hiddenTitle": true,
-        "titleBarStyle": "Overlay",
-        "acceptFirstMouse": true
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     },

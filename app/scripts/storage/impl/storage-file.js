@@ -6,7 +6,8 @@ const fileWatchers = {};
 class StorageFile extends StorageBase {
     name = 'file';
     icon = 'hdd';
-    enabled = !!Launcher;
+    // the webview shell has no native file backend yet (WebDAV only)
+    enabled = !!(Launcher && Launcher.fileStorageSupported);
     system = true;
     backup = true;
 

@@ -779,9 +779,9 @@
   "setHelpContact": "Contact",
   "kphAssociationTitle": "Browser integration",
   "kphAssociationBody": "A browser extension wants to connect to this database and read logins for the pages you open. Allow the association?",
-  "setBrowserKphIntro": "This build starts a KeePassHTTP endpoint for browser extensions. It listens on the loopback interface only and answers while the app is running.",
+  "setBrowserKphIntro": "This build exposes two browser transports: KeePassHTTP on loopback for simple extensions, and a native-messaging host for KeePassXC-Browser.",
   "setBrowserKphExtensions": "Extensions speaking this protocol",
-  "setBrowserKphNote": "KeePassXC-Browser is not supported: it talks to KeePassXC through its own native-messaging host. Associations last until the app quits, after which the extension asks to associate again.",
+  "setBrowserKphNote": "KeePassXC-Browser connects through the native host \"org.keepassxc.keepassxc_browser\", which this app installs for Chrome, Chromium, Edge, Brave, Vivaldi and Firefox at startup. If KeePassXC also provides that host, the last one installed wins. Associations last until the app quits, after which the extension asks again.",
   "setBrowserBundledTitle": "Extension shipped with the app",
   "setBrowserBundledBody": "A manifest-v3 extension is installed to /usr/share/keeweb-next/browser-extension. Open chrome://extensions, turn on Developer mode, choose Load unpacked and pick that folder. For Firefox, use manifest.firefox.json from the same folder.",
   "openPinFile": "Pin to top",
@@ -789,5 +789,7 @@
   "openSavePassword": "Remember password",
   "openSavePasswordDesc": "Saved on this computer, obfuscated with the database id; clear it to type the password on every start.",
   "openRememberKeyFile": "Remember key file",
-  "openRememberKeyFileDesc": "Use this key file automatically the next time this database is opened"
+  "openRememberKeyFileDesc": "Use this key file automatically the next time this database is opened",
+  "setBrowserNativeTitle": "KeePassXC-Browser (native messaging)",
+  "setBrowserNativeDesc": "Installs the native-messaging host manifests for the installed browsers so KeePassXC-Browser can connect. Uncheck to remove them and stop answering native requests."
 }

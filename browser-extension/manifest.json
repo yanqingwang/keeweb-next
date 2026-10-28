@@ -4,8 +4,15 @@
     "version": "1.0.0",
     "description": "Connects to the KeeWeb Next desktop shell over its local KeePassHTTP endpoint.",
     "minimum_chrome_version": "102",
-    "permissions": ["activeTab", "scripting", "storage", "tabs"],
-    "host_permissions": ["http://127.0.0.1:19455/*"],
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage",
+        "tabs"
+    ],
+    "host_permissions": [
+        "http://127.0.0.1:19455/*"
+    ],
     "background": {
         "service_worker": "background.js",
         "type": "module"
@@ -24,9 +31,15 @@
     },
     "content_scripts": [
         {
-            "matches": ["http://*/*", "https://*/*"],
-            "js": ["content.js"],
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": [
+                "content.js"
+            ],
             "run_at": "document_idle"
         }
-    ]
+    ],
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsuIX8HW4+mVl7mR7s3JClbsH5MBHGL3jefArFadKmP7UaMW7jvWSuUEzyPoBT5NL5Ye638AQdU7S0nYeItb87GAa1dy0e+5ymI1+8VeR/pjEc+qtaclgwWaJCAaSVXyF3Qp54nQ/TgaPHwxk5rtmA9xMfphwGeDBTZ6I5IkK3X4qzGuKpRaznkbLNvEOhtYKVUeF6wgr8+jPRtCv9Ze1J9zmFaBk+vDirw6BCtGbb8k68SWhigYBrGSryj0JwLL6p/xRzkWdNwu8fHwdYCQjBLXihk380cVhpFAYUWjbNvaF1tc2hEZKX63QtHNGESjZPSgxg42JhKp7HNvYv04DgQIDAQAB"
 }

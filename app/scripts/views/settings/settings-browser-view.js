@@ -12,6 +12,7 @@ import {
     SupportedExtensions
 } from 'comp/extension/browser-extension-connector';
 import { Alerts } from 'comp/ui/alerts';
+import { invoke, isTauri } from 'util/tauri';
 import { DateFormat } from 'comp/i18n/date-format';
 
 class SettingsBrowserView extends View {
@@ -19,6 +20,7 @@ class SettingsBrowserView extends View {
 
     events = {
         'change .check-enable-for-browser': 'changeEnableForBrowser',
+        'change .settings__browser-native-check': 'changeNativeIntegration',
         'change .settings__browser-focus-if-locked': 'changeFocusIfLocked',
         'change .settings__browser-focus-if-empty': 'changeFocusIfEmpty',
         'change .settings__browser-session-ask-get': 'changeSessionAskGet',
@@ -56,6 +58,7 @@ class SettingsBrowserView extends View {
             data.httpApi = true;
             data.httpEndpoint = 'http://127.0.0.1:19455';
             data.kphExtensions = Links.KphExtensions;
+            data.nativeIntegration = AppSettingsModel.nativeBrowserIntegration !== false;
         } else if (BrowserExtensionConnector.isEnabled()) {
             data.extensionNames = ['KeeWeb Connect', 'KeePassXC-Browser'];
             data.settingsPerBrowser = this.getSettingsPerBrowser();
@@ -161,6 +164,14 @@ class SettingsBrowserView extends View {
         BrowserExtensionConnector.enable(browser, extension, enabled);
 
         this.render();
+    }
+
+    changeNativeIntegration(e) {
+        const enabled = e.target.checked;
+        AppSettingsModel.nativeBrowserIntegration = enabled;
+        if (isTauri) {
+            invoke('set_browser_integration', { enabled }).catch(() => {});
+        }
     }
 
     changeFocusIfLocked(e) {

@@ -121,10 +121,26 @@ class PluginManager extends Model {
             return Promise.resolve();
         }
         this.emit('change');
-        return plugin.install(true, true).then(() => {
-            this.emit('change');
-            this.saveState();
-        });
+        return plugin
+            .install(true, true)
+            .then(() => {
+                this.emit('change');
+                this.saveState();
+            })
+            .catch(async (e) => {
+                // the cached resources can be older than the manifest or the
+                // signature key can have rotated; fetch the plugin again from
+                // its source and install the fresh copy
+                logger.info('Local activation failed, reinstalling from source', plugin.url, e);
+                try {
+                    await this.install(plugin.url);
+                    return;
+                } catch (reinstallError) {
+                    this.emit('change');
+                    this.saveState();
+                    throw reinstallError;
+                }
+            });
     }
 
     update(id) {

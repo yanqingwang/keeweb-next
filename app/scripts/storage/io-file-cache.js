@@ -11,15 +11,25 @@ Object.assign(IoFileCache.prototype, {
         if (this.basePath) {
             return callback();
         }
-        const basePath = Launcher.getUserDataPath(this.cacheName);
-        Launcher.mkdir(basePath, (err) => {
-            if (err) {
-                this.logger.error('Error creating plugin folder');
-            } else {
-                this.basePath = basePath;
+        // the data directory is resolved asynchronously at startup, and the
+        // synchronous getter can still be empty when plugins load; resolve it
+        // here so the cache never ends up in the working directory
+        const path = Launcher.getUserDataPathAsync
+            ? Promise.resolve(Launcher.getUserDataPathAsync(this.cacheName))
+            : Promise.resolve(Launcher.getUserDataPath(this.cacheName));
+        path.then((basePath) => {
+            if (!basePath) {
+                return callback('no data directory');
             }
-            callback(err);
-        });
+            Launcher.mkdir(basePath, (err) => {
+                if (err) {
+                    this.logger.error('Error creating plugin folder');
+                } else {
+                    this.basePath = basePath;
+                }
+                callback(err);
+            });
+        }).catch((err) => callback(err));
     },
 
     resolvePath(path) {

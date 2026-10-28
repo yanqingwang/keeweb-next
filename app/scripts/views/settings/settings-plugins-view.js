@@ -2,6 +2,7 @@ import { View } from 'framework/views/view';
 import { Events } from 'framework/events';
 import { RuntimeInfo } from 'const/runtime-info';
 import { Launcher } from 'comp/launcher';
+import { Alerts } from 'comp/ui/alerts';
 import { SettingsManager } from 'comp/settings/settings-manager';
 import { Links } from 'const/links';
 import { AppSettingsModel } from 'models/app-settings-model';
@@ -179,7 +180,12 @@ class SettingsPluginsView extends View {
 
     enableClick(e) {
         const pluginId = $(e.target).data('plugin');
-        PluginManager.activate(pluginId);
+        PluginManager.activate(pluginId).catch((e) => {
+            Alerts.error({
+                header: Locale.setPlEnableBtn,
+                body: String(e)
+            });
+        });
     }
 
     updateClick(e) {

@@ -7,6 +7,7 @@ import { SingleInstanceChecker } from 'comp/app/single-instance-checker';
 import { Updater } from 'comp/app/updater';
 import { UsbListener } from 'comp/app/usb-listener';
 import { BrowserExtensionConnector } from 'comp/extension/browser-extension-connector';
+import { startNativeBridge } from 'comp/extension/native-bridge';
 import { ShellBridge } from 'comp/extension/shell-bridge';
 import { FeatureTester } from 'comp/browser/feature-tester';
 import { FocusDetector } from 'comp/browser/focus-detector';
@@ -196,6 +197,7 @@ ready(() => {
 
         Events.emit('app-ready');
         ShellBridge.start();
+        startNativeBridge();
         StartProfiler.milestone('app ready event');
 
         StartProfiler.report();

@@ -110,8 +110,11 @@ flowchart LR
   保存当前页面已输入的登录。
 * **第三方扩展**：任何 KeePassHTTP 客户端都可以直连该端点，例如 chromeIPass、
   KeePassHttp-Connector。
-* **KeePassXC-Browser 不支持**：它只走 KeePassXC 自己的 native messaging 协议，
-  与本端点不兼容。
+* **KeePassXC-Browser**：通过 native messaging 直接连接。壳启动时会为
+  Chrome/Chromium/Edge/Brave/Vivaldi 与 Firefox 写入
+  `org.keepassxc.keepassxc_browser` 的主机清单，指向
+  `/usr/bin/keeweb-next-browser-host`；扩展按常规流程连接即可。若机器上同时装了
+  KeePassXC，同名清单会被最后安装的一方覆盖。
 * 协议对齐 KeePassHTTP v2.3.1.0：支持 `get-logins` / `get-logins-count` /
   `get-all-logins` / `get-logins-by-names` / `set-login`，响应带 HMAC-SHA256，
   `SubmitUrl` 参与匹配。

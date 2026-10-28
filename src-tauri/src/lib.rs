@@ -1,3 +1,4 @@
+pub mod browser_bridge;
 pub mod config_store;
 mod fs_ops;
 pub mod keepasshttp;
@@ -109,6 +110,8 @@ pub fn run() {
         window_close,
         config_store::config_load,
         config_store::config_save,
+        browser_bridge::browser_rpc_reply,
+        browser_bridge::set_browser_integration,
         fs_ops::file_read,
         fs_ops::file_write,
         fs_ops::file_stat,
@@ -148,6 +151,24 @@ pub fn run() {
             app.manage(config_store::State(store.clone()));
             let replies = std::sync::Arc::new(Replies::new());
             app.manage(replies.clone());
+            let browser_state = std::sync::Arc::new(browser_bridge::BrowserState::new(
+                std::sync::Arc::new(Replies::new()),
+            ));
+            let native_enabled = app
+                .path()
+                .app_data_dir()
+                .ok()
+                .map(|dir| dir.join("config/app-settings.json"))
+                .and_then(|path| std::fs::read_to_string(path).ok())
+                .and_then(|body| serde_json::from_str::<serde_json::Value>(&body).ok())
+                .and_then(|settings| {
+                    settings
+                        .get("nativeBrowserIntegration")
+                        .and_then(serde_json::Value::as_bool)
+                })
+                .unwrap_or(true);
+            browser_state.set_enabled(native_enabled);
+            app.manage(browser_state.clone());
             let vault = WebviewVault::new(handle.clone(), replies);
             let state = std::sync::Arc::new(ServerState {
                 associations: std::sync::Mutex::new(Default::default()),
@@ -156,8 +177,12 @@ pub fn run() {
 
             // The KeePassHTTP endpoint binds 127.0.0.1 only and dies with the
             // process; associations are equally process-local.
+            let http_handle = handle.clone();
             std::thread::spawn(move || {
-                keepasshttp::serve(state, handle);
+                keepasshttp::serve(state, http_handle);
+            });
+            std::thread::spawn(move || {
+                browser_bridge::serve(handle, browser_state);
             });
             Ok(())
         })

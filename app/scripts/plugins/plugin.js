@@ -48,6 +48,7 @@ class Plugin extends Model {
     install(activate, local) {
         const ts = this.logger.ts();
         this.status = PluginStatus.STATUS_INSTALLING;
+        this.installError = null;
         return Promise.resolve().then(() => {
             const error = this.validateManifest();
             if (error) {
@@ -201,8 +202,9 @@ class Plugin extends Model {
         const ts = this.logger.ts();
         const download = () => {
             const url = this.url + this.getResourcePath(type) + '?v=' + manifest.version;
-            return httpGet(url, true);
+            return httpGetMirrored(url, true);
         };
+        let downloaded = !local;
         let res;
         if (local) {
             res = new Promise((resolve, reject) => {
@@ -211,7 +213,9 @@ class Plugin extends Model {
             }).catch(() => {
                 // the cache can be gone after an upgrade or a moved data
                 // directory; the plugin is still installed, so fetch it again
+                // and put it back into the cache
                 this.logger.info('Cached resource missing, downloading it again', type);
+                downloaded = true;
                 return download();
             });
         } else {
@@ -221,6 +225,11 @@ class Plugin extends Model {
             this.logger.debug('Resource data loaded', type, this.logger.ts(ts));
             return this.verifyResource(data, type).then((data) => {
                 this.resources[type] = data;
+                if (downloaded) {
+                    return new Promise((resolve) =>
+                        io.save(this.getStorageResourcePath(type), data, () => resolve())
+                    );
+                }
             });
         });
     }
@@ -651,7 +660,7 @@ class Plugin extends Model {
         }
         commonLogger.info('Installing plugin from url', url);
         const manifestUrl = url + 'manifest.json';
-        return httpGet(manifestUrl)
+        return httpGetMirrored(manifestUrl)
             .catch((e) => {
                 commonLogger.error('Error loading plugin manifest', e);
                 throw 'Error loading plugin manifest';
@@ -698,6 +707,27 @@ Plugin.defineModelProperties({
 });
 
 Object.assign(Plugin, PluginStatus);
+
+// GitHub raw is unreachable on some networks; jsDelivr mirrors the same file.
+function mirrorUrl(url) {
+    const match = url.match(
+        /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)(\/.*)?$/
+    );
+    return match
+        ? `https://cdn.jsdelivr.net/gh/${match[1]}/${match[2]}@${match[3]}${match[4] || ''}`
+        : null;
+}
+
+function httpGetMirrored(url, binary) {
+    return httpGet(url, binary).catch((err) => {
+        const mirrored = mirrorUrl(url);
+        if (!mirrored) {
+            throw err;
+        }
+        commonLogger.info('Primary plugin host failed, trying the mirror', mirrored);
+        return httpGet(mirrored, binary);
+    });
+}
 
 function httpGet(url, binary) {
     commonLogger.debug('GET', url);

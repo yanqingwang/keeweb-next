@@ -10,6 +10,12 @@
             {{/each}}
         </ul>
         <p class="muted-color">{{res 'setBrowserKphNote'}}</p>
+        <div class="settings__browser-native">
+            <input type="checkbox" class="input-base settings__browser-native-check"
+                   id="settings__browser-native-check" {{#if nativeIntegration}}checked{{/if}} />
+            <label for="settings__browser-native-check">{{res 'setBrowserNativeTitle'}}</label>
+        </div>
+        <p class="muted-color">{{res 'setBrowserNativeDesc'}}</p>
         <h2>{{res 'setBrowserBundledTitle'}}</h2>
         <p>{{res 'setBrowserBundledBody'}}</p>
     {{else if desktop}}

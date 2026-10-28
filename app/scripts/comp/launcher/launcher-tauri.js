@@ -161,6 +161,11 @@ const Launcher = {
             .catch(noop);
     },
     getUserDataPath: (name) => [dataDir, name].filter(Boolean).join('/').replace(/\/+/g, '/'),
+    getUserDataPathAsync(name) {
+        return invoke('data_dir').then((dir) =>
+            [dir, name].filter(Boolean).join('/').replace(/\/+/g, '/')
+        );
+    },
     getTempPath: () => '',
     joinPath: (a, b) => [a, b].filter(Boolean).join('/').replace(/\/+/g, '/'),
     parsePath: (p) => ({

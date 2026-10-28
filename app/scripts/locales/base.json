@@ -792,5 +792,8 @@
   "openRememberKeyFileDesc": "Use this key file automatically the next time this database is opened",
   "setBrowserNativeTitle": "KeePassXC-Browser (native messaging)",
   "setBrowserNativeDesc": "Installs the native-messaging host manifests for the installed browsers so KeePassXC-Browser can connect. Uncheck to remove them and stop answering native requests.",
-  "extensionConnectRemember": "Remember this choice and do not ask again"
+  "extensionConnectRemember": "Remember this choice and do not ask again",
+  "setBrowserRememberedTitle": "When the browser asks for passwords:",
+  "setBrowserRememberedDesc": "This is the choice you made in the extension confirmation dialog. \"Always\" asks which entry to use on every site; the other option fills a single match without asking.",
+  "setBrowserRememberedForget": "Forget this choice and ask again on the next connection"
 }

@@ -16,6 +16,19 @@
             <label for="settings__browser-native-check">{{res 'setBrowserNativeTitle'}}</label>
         </div>
         <p class="muted-color">{{res 'setBrowserNativeDesc'}}</p>
+        <div class="settings__browser-remembered">
+            <div><label for="settings__browser-remembered-ask-get">{{res 'setBrowserRememberedTitle'}}</label></div>
+            <select id="settings__browser-remembered-ask-get" class="input-base">
+                <option value="multiple" {{#ifeq rememberedAskGet 'multiple'}}selected{{/ifeq}}>
+                    {{res 'extensionConnectAskGetMultiple'}}
+                </option>
+                <option value="always" {{#ifeq rememberedAskGet 'always'}}selected{{/ifeq}}>
+                    {{res 'extensionConnectAskGetAlways'}}
+                </option>
+            </select>
+            <p class="muted-color">{{res 'setBrowserRememberedDesc'}}</p>
+            <button class="btn btn-secondary settings__browser-btn-forget-connect">{{res 'setBrowserRememberedForget'}}</button>
+        </div>
         <h2>{{res 'setBrowserBundledTitle'}}</h2>
         <p>{{res 'setBrowserBundledBody'}}</p>
     {{else if desktop}}

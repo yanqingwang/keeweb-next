@@ -792,5 +792,8 @@
   "openRememberKeyFileDesc": "下次打开此数据库时自动使用此密钥文件",
   "setBrowserNativeTitle": "KeePassXC-Browser（原生消息）",
   "setBrowserNativeDesc": "为已安装的浏览器安装原生消息宿主清单，以便 KeePassXC-Browser 连接。取消勾选将移除这些清单并停止响应原生消息请求。",
-  "extensionConnectRemember": "记住此选择，不再询问"
+  "extensionConnectRemember": "记住此选择，不再询问",
+  "setBrowserRememberedTitle": "浏览器读取账号密码时：",
+  "setBrowserRememberedDesc": "这是你在扩展授权弹窗里勾选\"记住\"后保存的选择。\"总是询问\"会在每个网站上都让你挑选条目；另一项则只匹配到一个条目时直接带入，不再询问。",
+  "setBrowserRememberedForget": "清除此选择，下次连接时重新询问"
 }

@@ -21,6 +21,8 @@ class SettingsBrowserView extends View {
     events = {
         'change .check-enable-for-browser': 'changeEnableForBrowser',
         'change .settings__browser-native-check': 'changeNativeIntegration',
+        'change .settings__browser-remembered-ask-get': 'changeRememberedAskGet',
+        'click .settings__browser-btn-forget-connect': 'forgetRememberedConnect',
         'change .settings__browser-focus-if-locked': 'changeFocusIfLocked',
         'change .settings__browser-focus-if-empty': 'changeFocusIfEmpty',
         'change .settings__browser-session-ask-get': 'changeSessionAskGet',
@@ -59,6 +61,10 @@ class SettingsBrowserView extends View {
             data.httpEndpoint = 'http://127.0.0.1:19455';
             data.kphExtensions = Links.KphExtensions;
             data.nativeIntegration = AppSettingsModel.nativeBrowserIntegration !== false;
+            data.rememberedAskGet = AppSettingsModel.extensionConnectRemembered
+                ? AppSettingsModel.extensionConnectRemembered.askGet
+                : 'multiple';
+            data.connectIsRemembered = !!AppSettingsModel.extensionConnectRemembered;
         } else if (BrowserExtensionConnector.isEnabled()) {
             data.extensionNames = ['KeeWeb Connect', 'KeePassXC-Browser'];
             data.settingsPerBrowser = this.getSettingsPerBrowser();
@@ -95,6 +101,16 @@ class SettingsBrowserView extends View {
             });
             return { browser, browserName, extensions };
         });
+    }
+
+    changeRememberedAskGet(e) {
+        const remembered = AppSettingsModel.extensionConnectRemembered || {};
+        AppSettingsModel.extensionConnectRemembered = { ...remembered, askGet: e.target.value };
+    }
+
+    forgetRememberedConnect() {
+        AppSettingsModel.extensionConnectRemembered = null;
+        this.render();
     }
 
     getSessionFileAccess(session) {

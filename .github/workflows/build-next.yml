@@ -98,8 +98,11 @@ jobs:
   release:
     name: GitHub release
     needs: [web, shell]
-    # tags only: pushing vX.Y.Z publishes the first downloadable build
-    if: startsWith(github.ref, 'refs/tags/v')
+    # tags only: publish the available artifacts even when the optional macOS
+    # runner is unavailable; web/Linux/Windows downloads remain useful.
+    if: >-
+      always() && startsWith(github.ref, 'refs/tags/v') &&
+      needs.web.result == 'success' && needs.shell.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: write

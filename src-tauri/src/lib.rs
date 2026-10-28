@@ -135,16 +135,7 @@ pub fn run() {
             let builder = builder
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true);
-            let window = builder.build().map_err(|e| e.to_string())?;
-            if let Ok(path) = std::env::var("KEEWEB_EVAL") {
-                let win = window.clone();
-                std::thread::spawn(move || {
-                    std::thread::sleep(std::time::Duration::from_secs(4));
-                    if let Ok(js) = std::fs::read_to_string(path) {
-                        let _ = win.eval(&js);
-                    }
-                });
-            }
+            let _window = builder.build().map_err(|e| e.to_string())?;
 
             let handle = app.handle().clone();
             let config_dir = app

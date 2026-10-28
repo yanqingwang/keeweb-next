@@ -51,7 +51,7 @@ jobs:
       fail-fast: false
       # macos-13 (Intel) is not in the matrix: GitHub's Intel runners are
       # scarce and a queued job there blocked the whole workflow for hours.
-      # macOS builds target Apple Silicon (macos-14); Intel users can build
+      # macOS builds target Apple Silicon (macos-latest); Intel users can build
       # from source with the same workflow.
       matrix:
         include:

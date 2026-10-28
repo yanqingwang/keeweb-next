@@ -6,6 +6,7 @@ class ExtensionConnectView extends View {
 
     events = {
         'change #extension-connect__ask-get': 'askGetChanged',
+        'change #extension-connect__remember': 'rememberChanged',
         'change .extension-connect__file-check': 'fileChecked'
     };
 
@@ -56,6 +57,11 @@ class ExtensionConnectView extends View {
 
     askGetChanged(e) {
         this.config.askGet = e.target.value;
+    }
+
+    rememberChanged(e) {
+        this.config.remember = e.target.checked;
+        this.render();
     }
 }
 

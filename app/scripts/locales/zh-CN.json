@@ -746,8 +746,8 @@
   "extensionConnectAllOtherFiles": "所有其他的文件",
   "extensionConnectAllFiles": "所有文件",
   "extensionConnectAskGet": "在返回密码到扩展前询问:",
-  "extensionConnectAskGetMultiple": "如果有多项匹配",
-  "extensionConnectAskGetAlways": "总是",
+  "extensionConnectAskGetMultiple": "仅在匹配到多个条目时",
+  "extensionConnectAskGetAlways": "总是询问（即使只匹配到一个条目）",
   "extensionConnectAskSave": "在保存新密码到KeeWeb前询问：",
   "extensionConnectAskSaveAlways": "总是",
   "extensionConnectAskSaveAuto": "当无法自动保存时",
@@ -791,5 +791,6 @@
   "openRememberKeyFile": "记住密钥文件",
   "openRememberKeyFileDesc": "下次打开此数据库时自动使用此密钥文件",
   "setBrowserNativeTitle": "KeePassXC-Browser（原生消息）",
-  "setBrowserNativeDesc": "为已安装的浏览器安装原生消息宿主清单，以便 KeePassXC-Browser 连接。取消勾选将移除这些清单并停止响应原生消息请求。"
+  "setBrowserNativeDesc": "为已安装的浏览器安装原生消息宿主清单，以便 KeePassXC-Browser 连接。取消勾选将移除这些清单并停止响应原生消息请求。",
+  "extensionConnectRemember": "记住此选择，不再询问"
 }

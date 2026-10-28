@@ -179,6 +179,19 @@ async function checkContentRequestPermissions(request) {
 
     focusKeeWeb();
 
+    // a decision the user asked to remember skips this dialog for good; it is
+    // the only way the extension can read credentials without a confirmation
+    // every time the app restarts, because permissions live in memory only
+    const remembered = AppSettingsModel.extensionConnectRemembered;
+    if (remembered) {
+        client.permissions = {
+            allFiles: true,
+            files: [],
+            askGet: remembered.askGet || 'multiple'
+        };
+        return;
+    }
+
     const config = RuntimeDataModel.extensionConnectConfig;
     const files = appModel.files.map((f) => ({
         id: f.id,
@@ -216,6 +229,11 @@ async function checkContentRequestPermissions(request) {
 
     RuntimeDataModel.extensionConnectConfig = extensionConnectView.config;
     client.permissions = extensionConnectView.config;
+    if (extensionConnectView.config.remember) {
+        AppSettingsModel.extensionConnectRemembered = {
+            askGet: extensionConnectView.config.askGet
+        };
+    }
     Events.emit('browser-extension-sessions-changed');
 }
 

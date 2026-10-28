@@ -76,7 +76,10 @@ const Launcher = {
     // hidden instead of crashing the general page
     canDetectOsSleep: () => false,
     isAppFocused: () => document.hasFocus(),
-    showMainWindow: noop,
+    // browser requests need this window in front to be answered
+    showMainWindow: () => {
+        invoke('window_focus').catch(noop);
+    },
     hideApp: noop,
     minimizeApp: noop,
     openDevTools: noop,

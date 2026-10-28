@@ -227,7 +227,7 @@
   "openChalRespErrorEmptyMac": "First time using this feature on macOS? KeeWeb must be added to the Input Monitoring section of security settings.",
   "detAttDownload": "Shift-click the attachment button to download it or",
   "detAttDelToRemove": "Delete to remove",
-  "detAttSave": "Save as \u2026",
+  "detAttSave": "Save as …",
   "detEmpty": "Your passwords will be displayed here",
   "detGroupRestore": "To restore this group, please drag it to any group outside trash",
   "detHistoryClickPoint": "Click entry history timeline point to view state",
@@ -496,7 +496,7 @@
   "setFileLocalHint": "Want to work seamlessly with local files?",
   "setFileDownloadApp": "Download a desktop app",
   "setFileSave": "Save",
-  "setFileSaveTo": "Save to \u2026",
+  "setFileSaveTo": "Save to …",
   "setFileClose": "Close",
   "setFileSync": "Sync",
   "setFileSyncVerb": "Sync",
@@ -746,8 +746,8 @@
   "extensionConnectAllOtherFiles": "All other files",
   "extensionConnectAllFiles": "All files",
   "extensionConnectAskGet": "Ask before returning passwords to the extension:",
-  "extensionConnectAskGetMultiple": "if there's more than one match",
-  "extensionConnectAskGetAlways": "always",
+  "extensionConnectAskGetMultiple": "only when several entries match",
+  "extensionConnectAskGetAlways": "always, even for a single match",
   "extensionConnectAskSave": "Ask before saving new passwords to KeeWeb:",
   "extensionConnectAskSaveAlways": "always",
   "extensionConnectAskSaveAuto": "when it's not possible to save automatically",
@@ -791,5 +791,6 @@
   "openRememberKeyFile": "Remember key file",
   "openRememberKeyFileDesc": "Use this key file automatically the next time this database is opened",
   "setBrowserNativeTitle": "KeePassXC-Browser (native messaging)",
-  "setBrowserNativeDesc": "Installs the native-messaging host manifests for the installed browsers so KeePassXC-Browser can connect. Uncheck to remove them and stop answering native requests."
+  "setBrowserNativeDesc": "Installs the native-messaging host manifests for the installed browsers so KeePassXC-Browser can connect. Uncheck to remove them and stop answering native requests.",
+  "extensionConnectRemember": "Remember this choice and do not ask again"
 }

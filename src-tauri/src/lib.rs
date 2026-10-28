@@ -87,6 +87,15 @@ fn window_toggle_maximize(window: tauri::Window) -> Result<(), String> {
 }
 
 #[tauri::command]
+/// Brings the shell window to the front. Browser requests that need a decision
+/// (first connection, entry picking) raise the window, otherwise the user sees
+/// nothing happen in the browser while a dialog waits invisibly.
+fn window_focus(window: tauri::Window) -> Result<(), String> {
+    let _ = window.show();
+    window.set_focus().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn window_close(window: tauri::Window) -> Result<(), String> {
     window.close().map_err(|e| e.to_string())
 }
@@ -169,6 +178,7 @@ pub fn run() {
         vault_rpc_reply,
         window_minimize,
         window_toggle_maximize,
+        window_focus,
         window_close,
         config_store::config_load,
         config_store::config_save,

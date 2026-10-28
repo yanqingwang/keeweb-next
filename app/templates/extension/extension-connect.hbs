@@ -41,5 +41,12 @@
             </option>
         </select>
     </div>
-    <p>{{res 'extensionConnectSettingsAreForSession'}}</p>
+    <div>
+        <input type="checkbox" class="input-base extension-connect__remember-check"
+               id="extension-connect__remember" checked />
+        <label for="extension-connect__remember">{{res 'extensionConnectRemember'}}</label>
+    </div>
+    {{#unless remember}}
+        <p>{{res 'extensionConnectSettingsAreForSession'}}</p>
+    {{/unless}}
 </div>

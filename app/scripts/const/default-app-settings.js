@@ -81,6 +81,9 @@ const DefaultAppSettings = {
     webdavSaveMethod: 'move', // how to save files with WebDAV: "move" or "put"
     webdavStatReload: false,
     nativeBrowserIntegration: true, // install the KeePassXC-Browser native-messaging host
+    // { askGet } remembered from the extension connect dialog, so the prompt is
+    // shown once instead of after every app restart; null means ask every time
+    extensionConnectRemembered: null,
 
     gdrive: true, // enable Google Drive integration
     gdriveClientId: null, // custom Google Drive client id

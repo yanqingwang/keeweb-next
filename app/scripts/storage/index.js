@@ -11,7 +11,9 @@ import { createOAuthSession } from 'storage/pkce';
 
 const BuiltInStorage = {
     file: new StorageFile(),
-    cache: Launcher ? new StorageFileCache() : new StorageCache()
+    // the file-backed cache needs a native file backend; without one (the
+    // webview shell) the browser cache keeps offline copies in IndexedDB
+    cache: Launcher && Launcher.fileStorageSupported ? new StorageFileCache() : new StorageCache()
 };
 
 const ThirdPartyStorage = {

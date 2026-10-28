@@ -9,6 +9,7 @@ license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3')
 makedepends=('git' 'rust' 'nodejs' 'npm' 'clang' 'cmake' 'ninja' 'pkgconf')
 backup=('etc/keeweb-next/config.json')
+options=('!lto')
 source=("$pkgname::git+https://github.com/yanqingwang/keeweb-next.git")
 sha256sums=('SKIP')
 

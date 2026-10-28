@@ -1,0 +1,24 @@
+pkgbase = keeweb-next
+	pkgdesc = KeeWeb as a web app, with an optional Tauri webview shell (WebDAV without CORS limits)
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/yanqingwang/keeweb-next
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	makedepends = git
+	makedepends = rust
+	makedepends = nodejs
+	makedepends = npm
+	makedepends = clang
+	makedepends = cmake
+	makedepends = ninja
+	makedepends = pkgconf
+	depends = webkit2gtk-4.1
+	depends = gtk3
+	options = !lto
+	backup = etc/keeweb-next/config.json
+	source = keeweb-next::git+https://github.com/yanqingwang/keeweb-next.git
+	sha256sums = SKIP
+
+pkgname = keeweb-next

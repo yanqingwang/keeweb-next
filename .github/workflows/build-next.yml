@@ -57,7 +57,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             bundles: deb,rpm,appimage
-          - os: macos-14
+          - os: macos-latest
             bundles: dmg,app
           - os: windows-latest
             bundles: msi,nsis

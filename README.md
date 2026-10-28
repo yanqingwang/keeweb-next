@@ -137,7 +137,7 @@ npm test                                     # 浏览器测试（需要 CHROME_B
 * 拖拽：`titlebarStyle: hidden` 下的拖动条带带 `data-tauri-drag-region`。
 * 图标：`icon.icns` 随包安装。
 * 设置持久化在 `~/Library/Application Support/info.keeweb.next/config/`。
-* CI 在 `macos-14`（Apple Silicon）原生编译并出 dmg/app 包
+* CI 在 `macos-latest`（Apple Silicon）原生编译并出 dmg/app 包
   （`.github/workflows/build-next.yml`；Intel 版省略以省 macOS 分钟数）。
 
 未迁移的 macOS 专属能力：Touch ID / 硬件加密存储（原 Electron

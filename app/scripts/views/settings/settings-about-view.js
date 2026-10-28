@@ -10,11 +10,14 @@ class SettingsAboutView extends View {
     render() {
         super.render({
             version: RuntimeInfo.version,
+            // the KeeWeb release this fork is based on; the app version above
+            // moves with the fork
+            baseVersion: '1.18.9',
             licenseLink: Links.License,
             licenseLinkApache: Links.LicenseApache,
             licenseLinkCCBY40: Links.LicenseLinkCCBY40,
             repoLink: Links.Repo,
-            donationLink: Links.Donation,
+            upstreamRepoLink: Links.UpstreamRepo,
             isDesktop: Features.isDesktop,
             year: new Date().getFullYear()
         });

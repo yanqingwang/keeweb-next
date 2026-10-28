@@ -155,11 +155,7 @@ ready(() => {
             const skipHttpsWarning =
                 localStorage.skipHttpsWarning || appModel.settings.skipHttpsWarning;
             const protocolIsInsecure = ['https:', 'file:', 'app:'].indexOf(location.protocol) < 0;
-            // the shell serves its own assets over loopback http; a loopback
-            // origin is a secure context, so it gets the same trust as
-            // localhost instead of the "Not Secure!" interstitial
-            const loopbackHosts = ['localhost', '127.0.0.1', '[::1]', '::1'];
-            const hostIsInsecure = loopbackHosts.indexOf(location.hostname) < 0;
+            const hostIsInsecure = location.hostname !== 'localhost';
             if (protocolIsInsecure && hostIsInsecure && !skipHttpsWarning) {
                 return new Promise((resolve) => {
                     Alerts.error({

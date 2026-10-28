@@ -1,11 +1,11 @@
 pub mod config_store;
+mod fs_ops;
 pub mod keepasshttp;
 pub mod vault_bridge;
 pub mod webdav;
 
 use keepasshttp::ServerState;
 use std::collections::HashMap;
-use std::io::{Read, Write};
 use std::sync::mpsc;
 use tauri::Manager;
 use vault_bridge::{VaultRpcReply, WebviewVault};
@@ -93,77 +93,6 @@ impl Replies {
 /// tauri's custom scheme (the page loads, scripts never run). Plain http
 /// avoids the custom-scheme quirks entirely; the port is random and bound to
 /// 127.0.0.1, and the server dies with the process.
-fn serve_ui(app: tauri::AppHandle) -> u16 {
-    let listener = std::net::TcpListener::bind(("127.0.0.1", 0))
-        .expect("failed to bind a port for the UI server");
-    let port = listener.local_addr().expect("addr").port();
-    std::thread::spawn(move || {
-        for stream in listener.incoming() {
-            let Ok(mut stream) = stream else { continue };
-            let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(10)));
-            let mut buffer = Vec::new();
-            let mut chunk = [0u8; 4096];
-            let header_end = 'read: loop {
-                match stream.read(&mut chunk) {
-                    Ok(0) => break 'read 0usize,
-                    Ok(n) => buffer.extend_from_slice(&chunk[..n]),
-                    Err(_) => break 'read 0usize,
-                }
-                if let Some(pos) = buffer.windows(4).position(|w| w == b"\r\n\r\n") {
-                    break 'read pos + 4;
-                }
-                if buffer.len() > 32 * 1024 {
-                    break 'read 0usize;
-                }
-            };
-            let head = String::from_utf8_lossy(&buffer[..header_end]).to_string();
-            let path = head
-                .split_whitespace()
-                .nth(1)
-                .unwrap_or("/")
-                .split('?')
-                .next()
-                .unwrap_or("/")
-                .to_string();
-            let asset_path = if path == "/" {
-                "index.html".to_string()
-            } else {
-                path.trim_start_matches('/').to_string()
-            };
-            let (bytes, mime) = match app.asset_resolver().get(asset_path.clone()) {
-                Some(asset) => {
-                    let mime = match asset_path.rsplit('.').next() {
-                        Some("html") => "text/html; charset=utf-8",
-                        Some("js") => "application/javascript",
-                        Some("css") => "text/css",
-                        Some("png") => "image/png",
-                        Some("svg") => "image/svg+xml",
-                        Some("json") => "application/json",
-                        Some("woff2") => "font/woff2",
-                        _ => "application/octet-stream",
-                    };
-                    (asset.bytes, mime.to_string())
-                }
-                None => {
-                    match app.asset_resolver().get("index.html".to_string()) {
-                        Some(fallback) => (fallback.bytes, "text/html; charset=utf-8".to_string()),
-                        None => (b"not found".to_vec(), "text/plain".to_string()),
-                    }
-                }
-            };
-            let http = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-                mime,
-                bytes.len()
-            );
-            let _ = stream.write_all(http.as_bytes());
-            let _ = stream.write_all(&bytes);
-            let _ = stream.flush();
-        }
-    });
-    port
-}
-
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -179,18 +108,24 @@ pub fn run() {
         window_toggle_maximize,
         window_close,
         config_store::config_load,
-        config_store::config_save
+        config_store::config_save,
+        fs_ops::file_read,
+        fs_ops::file_write,
+        fs_ops::file_stat,
+        fs_ops::file_exists,
+        fs_ops::file_delete,
+        fs_ops::dir_create,
+        fs_ops::pick_file,
+        fs_ops::save_dialog,
+        fs_ops::documents_dir
     ])
         .setup(|app| {
-            // WebKitGTK renders a blank window when the app is loaded through
-            // tauri's custom scheme (the document loads, no script runs), so
-            // the shell serves its embedded assets over loopback http instead.
-            let ui_port = serve_ui(app.handle().clone());
-            let url = format!("http://127.0.0.1:{}/", ui_port);
+            // the embedded assets are served on tauri://localhost: a secure
+            // context (WebCrypto works), and app commands are allowed for it
             let builder = tauri::WebviewWindowBuilder::new(
                 app,
                 "main",
-                tauri::WebviewUrl::External(url.parse().expect("ui url")),
+                tauri::WebviewUrl::App("index.html".into()),
             )
             .title("KeeWeb Next")
             .inner_size(1280.0, 800.0)

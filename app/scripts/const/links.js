@@ -1,10 +1,11 @@
 const Links = {
     Homepage: 'https://keeweb.info',
-    Repo: 'https://github.com/keeweb/keeweb',
+    Repo: 'https://github.com/yanqingwang/keeweb-next',
+    UpstreamRepo: 'https://github.com/keeweb/keeweb',
     Desktop: 'https://github.com/keeweb/keeweb/releases/latest',
     WebApp: 'https://app.keeweb.info',
     BetaWebApp: 'https://beta.keeweb.info',
-    License: 'https://github.com/keeweb/keeweb/blob/master/LICENSE',
+    License: 'https://github.com/yanqingwang/keeweb-next/blob/master/LICENSE',
     LicenseApache: 'https://opensource.org/licenses/Apache-2.0',
     LicenseLinkCCBY40: 'https://creativecommons.org/licenses/by/4.0/',
     UpdateBasePath: 'https://github.com/keeweb/keeweb/releases/download/v{ver}/',

@@ -227,7 +227,7 @@
   "openChalRespErrorEmptyMac": "First time using this feature on macOS? KeeWeb must be added to the Input Monitoring section of security settings.",
   "detAttDownload": "Shift-click the attachment button to download it or",
   "detAttDelToRemove": "Delete to remove",
-  "detAttSave": "Save as …",
+  "detAttSave": "Save as \u2026",
   "detEmpty": "Your passwords will be displayed here",
   "detGroupRestore": "To restore this group, please drag it to any group outside trash",
   "detHistoryClickPoint": "Click entry history timeline point to view state",
@@ -496,7 +496,7 @@
   "setFileLocalHint": "Want to work seamlessly with local files?",
   "setFileDownloadApp": "Download a desktop app",
   "setFileSave": "Save",
-  "setFileSaveTo": "Save to …",
+  "setFileSaveTo": "Save to \u2026",
   "setFileClose": "Close",
   "setFileSync": "Sync",
   "setFileSyncVerb": "Sync",
@@ -774,5 +774,8 @@
   "selectEntryContains": "Contains text",
   "selectEntrySubdomains": "Subdomains",
   "selectEntryFieldHeader": "Select field",
-  "selectEntryFieldTouch": "Press the button on your device to generate a one-time code."
+  "selectEntryFieldTouch": "Press the button on your device to generate a one-time code.",
+  "setAboutFork1": "This app is a fork of",
+  "setAboutFork2": "maintained by",
+  "setAboutFork3": "The web app is KeeWeb; the desktop shell is Tauri 2 instead of Electron, which also lets WebDAV databases load without the browser CORS limits."
 }

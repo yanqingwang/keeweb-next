@@ -47,10 +47,9 @@ flowchart LR
 
 * **Web 模式（无壳）**：`dist/` 是纯静态站点，任何浏览器可跑；本地文件用
   File System Access API，WebDAV 受浏览器 CORS 限制。
-* **WebView 模式（默认桌面形态）**：Tauri 2 加载同一份 `dist/`，WebDAV 走
-  Rust `reqwest`，无 CORS 限制、无 Node、无 Chromium 捆绑。壳在 `127.0.0.1`
-  随机端口起一个只读静态服务器提供 `dist/`（WebKitGTK 不执行 `tauri://` 页面
-  上的脚本），回环来源与 `localhost` 同等对待，不触发 "Not Secure!" 拦截。
+* **WebView 模式（默认桌面形态）**：Tauri 2 加载同一份 `dist/`（`tauri://localhost`
+  安全上下文，WebCrypto 可用），WebDAV 走 Rust `reqwest`，无 CORS 限制、无 Node、
+  无 Chromium 捆绑。
 * **本机 HTTP API（进行中）**：壳进程在 `127.0.0.1` 起 KeePassHTTP 兼容端点，
   浏览器插件/KeePass 插件直接对话；密钥配对沿用 KeePassHTTP 的
   test-associate / associate / get-logins / set-login 流程（AES-256-CBC）。
@@ -73,7 +72,13 @@ flowchart LR
   仅 Node 可用的文件/auto-type 接口留空实现）；缺它就是白屏——启动时
   `Updater.init()` 抛 TypeError，页面停在空 body。
 * 本地文件存储需要原生文件后端，壳内以 `fileStorageSupported` 显式关闭，
-  离线缓存退回浏览器 IndexedDB 版本。
+  离线缓存退回浏览器 IndexedDB 版本；另提供原生文件命令（读写/stat/mkdir/
+  文件对话框），设置里的「另存为」、备份路径、选择密钥文件因此可用。
+* 设置页全部可用并持久化到 `~/.local/share/info.keeweb.next/config/*.json`
+  （主题、语言、自动锁定等）；Devices/YubiKey 需要原生 USB 模块与 `ykman`，
+  壳内未实现，入口已关闭（`Launcher.devicesSupported = false`）。
+* About 页改为本分支信息：KeeWeb Next 版本、维护者 Rossw、基于 KeeWeb 1.18.9
+  （Antelle，MIT）。
 * Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制）。
 
 ## 尚未完成 / 路线图
@@ -135,6 +140,9 @@ npm test                                     # 浏览器测试（需要 CHROME_B
 未迁移的 macOS 专属能力：Touch ID / 硬件加密存储（原 Electron
 hardware-crypto）、auto-type、全局快捷键、托盘。
 
+USB 设备 / YubiKey 同样未实现（原实现依赖 node-usb-detection、
+node-yubikey-chalresp 与 `ykman` CLI），设置中的 Devices 页面已隐藏。
+
 ## 安装（Arch Linux）
 
 ```bash
@@ -143,6 +151,9 @@ makepkg -si          # 装入 /usr/bin/keeweb-next 与 /usr/share/keeweb-next/di
 ```
 
 * WebView 形态：直接运行 `keeweb-next`。
+* 自托管：`/usr/share/keeweb-next/dist` 是纯静态站点，用任意 web server 提供即可；
+  本仓库不再附带 Docker 镜像文件（上游的 `package/docker*` 依赖外部基础镜像且
+  无任何构建引用，已删除）。
 * 浏览器形态（不装 webkit 依赖时）：`/usr/share/keeweb-next/dist/index.html`。
 
 ## 坚果云（Nutstore）配置

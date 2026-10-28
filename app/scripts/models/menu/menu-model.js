@@ -122,7 +122,7 @@ class MenuModel extends Model {
         this.pluginsSection = new MenuSectionModel([
             { locTitle: 'plugins', icon: 'puzzle-piece', page: 'plugins' }
         ]);
-        if (Launcher) {
+        if (Launcher && Launcher.devicesSupported) {
             this.devicesSection = new MenuSectionModel([
                 { locTitle: 'menuSetDevices', icon: 'usb', page: 'devices' }
             ]);

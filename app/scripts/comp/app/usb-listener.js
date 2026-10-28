@@ -3,11 +3,12 @@ import { Logger } from 'util/logger';
 import { NativeModules } from 'comp/launcher/native-modules';
 import { AppSettingsModel } from 'models/app-settings-model';
 import { Features } from 'util/features';
+import { Launcher } from 'comp/launcher';
 
 const logger = new Logger('usb-listener');
 
 const UsbListener = {
-    supported: Features.isDesktop,
+    supported: Features.isDesktop && !!Launcher && !!Launcher.devicesSupported,
     attachedYubiKeys: 0,
 
     init() {

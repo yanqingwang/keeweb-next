@@ -1,5 +1,17 @@
 KeeWeb Next — KeeWeb in the system WebView, with a Tauri 2 shell.
 
+**Fixes in 0.1.2 — KeePassXC-Browser could not connect**
+
+- macOS: the native-messaging manifests were only written to the Linux paths
+  (`~/.config`, `~/.mozilla`), so Firefox never found the host. They now go to
+  `~/Library/Application Support/{<browser>,Mozilla}/`.
+- macOS: preparing the socket directory tried to `chmod 0700` its parent, which
+  was `/tmp` — the call failed and the browser bridge never started. The socket
+  now lives in a per-user directory under the app's own support folder.
+- Association and `get-databasehash` no longer require an open vault, matching
+  KeePassXC. Previously the extension saw “database closed” and refused to
+  associate at all, which looked like “cannot connect”.
+
 **Highlights**
 
 - WebDAV without CORS limits (Nutstore, Nextcloud, any WebDAV), tolerant of

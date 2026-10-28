@@ -72,40 +72,13 @@ impl BrowserState {
 }
 
 pub fn socket_path() -> PathBuf {
-    if let Some(path) = std::env::var_os("KEEWEB_BROWSER_SOCKET") {
-        return PathBuf::from(path);
-    }
-    if let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR") {
-        return PathBuf::from(dir).join("keeweb-next-browser.sock");
-    }
-    let uid = libc_getuid();
-    PathBuf::from(format!("/tmp/keeweb-next-{}-browser.sock", uid))
-}
-
-fn libc_getuid() -> u32 {
-    // avoid pulling the libc crate in for one call
-    std::process::Command::new("id")
-        .arg("-u")
-        .output()
-        .ok()
-        .and_then(|out| String::from_utf8_lossy(&out.stdout).trim().parse().ok())
-        .unwrap_or(1000)
-}
-
-fn prepare_socket_dir(path: &std::path::Path) -> std::io::Result<()> {
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)?;
-        let mut perms = std::fs::metadata(dir)?.permissions();
-        perms.set_mode(0o700);
-        std::fs::set_permissions(dir, perms)?;
-    }
-    Ok(())
+    crate::browser_socket::socket_path()
 }
 
 /// Binds the socket and serves one thread per browser connection.
 pub fn serve(app: tauri::AppHandle, state: Arc<BrowserState>) {
     let path = socket_path();
-    if let Err(e) = prepare_socket_dir(&path) {
+    if let Err(e) = crate::browser_socket::prepare_dir(&path) {
         eprintln!("[browser-bridge] cannot prepare socket dir: {}", e);
         return;
     }
@@ -220,17 +193,104 @@ pub fn browser_rpc_reply(
 /// The host keeps the KeePassXC-Browser host name, which is what the extension
 /// looks for. If KeePassXC also provides that host, the last writer wins; the
 /// settings page says so.
+/// One browser's manifest directory, whether that browser is installed, and
+/// which manifest flavour it needs.
+pub struct ManifestTarget {
+    pub dir: PathBuf,
+    pub installed: bool,
+    pub firefox: bool,
+}
+
+/// Where each browser looks for native-messaging manifests, paired with a
+/// marker that says whether that browser is actually installed.
+///
+/// The layouts have nothing in common: Linux uses `~/.config/<browser>` and
+/// `~/.mozilla`, while macOS puts every browser — Firefox included — under
+/// `~/Library/Application Support`. Writing only the Linux paths is why the
+/// Firefox extension never found the host on macOS.
+#[cfg(target_os = "macos")]
+pub fn manifest_targets(home: &std::path::Path) -> Vec<ManifestTarget> {
+    let support = home.join("Library/Application Support");
+    let apps = std::path::Path::new("/Applications");
+    let user_apps = home.join("Applications");
+    let bundle_installed = |bundle: &str| {
+        apps.join(bundle).exists() || user_apps.join(bundle).exists()
+    };
+
+    let mut targets = Vec::new();
+    let chromium = [
+        ("Google/Chrome", "Google Chrome.app"),
+        ("Chromium", "Chromium.app"),
+        ("Microsoft Edge", "Microsoft Edge.app"),
+        ("BraveSoftware/Brave-Browser", "Brave Browser.app"),
+        ("Vivaldi", "Vivaldi.app"),
+    ];
+    for (dir, bundle) in chromium {
+        let profile = support.join(dir);
+        let installed = profile.is_dir() || bundle_installed(bundle);
+        targets.push(ManifestTarget {
+            dir: profile.join("NativeMessagingHosts"),
+            installed,
+            firefox: false,
+        });
+    }
+
+    // Firefox reads manifests from a single shared Mozilla directory that does
+    // not exist until something writes to it, so presence of Firefox itself
+    // (or of its profile directory) is the only usable marker.
+    let installed = bundle_installed("Firefox.app") || support.join("Firefox").is_dir();
+    targets.push(ManifestTarget {
+        dir: support.join("Mozilla/NativeMessagingHosts"),
+        installed,
+        firefox: true,
+    });
+    targets
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn manifest_targets(home: &std::path::Path) -> Vec<ManifestTarget> {
+    let mut targets = Vec::new();
+    let chromium = [
+        ".config/google-chrome",
+        ".config/chromium",
+        ".config/microsoft-edge",
+        ".config/BraveSoftware/Brave-Browser",
+        ".config/vivaldi",
+    ];
+    for dir in chromium {
+        let profile = home.join(dir);
+        targets.push(ManifestTarget {
+            dir: profile.join("NativeMessagingHosts"),
+            installed: profile.is_dir(),
+            firefox: false,
+        });
+    }
+    let firefox = home.join(".mozilla");
+    targets.push(ManifestTarget {
+        dir: firefox.join("native-messaging-hosts"),
+        installed: firefox.is_dir(),
+        firefox: true,
+    });
+    targets
+}
+
 pub fn install_manifests() {
+    let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
+        return;
+    };
+    install_manifests_in(&home);
+}
+
+/// Split out from [`install_manifests`] so the install/remove round trip can be
+/// tested against a temporary home instead of the real one.
+pub fn install_manifests_in(home: &std::path::Path) {
     let host = host_binary_path();
     let Some(host) = host else {
+        eprintln!("[browser-bridge] cannot locate the native-messaging helper binary");
         return;
     };
     let host = host.to_string_lossy().to_string();
 
-    let home = match std::env::var_os("HOME") {
-        Some(home) => PathBuf::from(home),
-        None => return,
-    };
     let chrome_manifest = json!({
         "name": HOST_NAME,
         "description": "KeeWeb Next browser integration",
@@ -246,22 +306,16 @@ pub fn install_manifests() {
         "allowed_extensions": [FIREFOX_EXTENSION_ID],
     });
 
-    let chrome_bases = [
-        ".config/google-chrome",
-        ".config/chromium",
-        ".config/microsoft-edge",
-        ".config/BraveSoftware/Brave-Browser",
-        ".config/vivaldi",
-    ];
-    for base in chrome_bases {
-        let dir = home.join(base);
-        if dir.is_dir() {
-            write_manifest(&dir.join("NativeMessagingHosts"), &chrome_manifest);
+    for target in manifest_targets(home) {
+        if !target.installed {
+            continue;
         }
-    }
-    let firefox = home.join(".mozilla");
-    if firefox.is_dir() {
-        write_manifest(&firefox.join("native-messaging-hosts"), &firefox_manifest);
+        let manifest = if target.firefox {
+            &firefox_manifest
+        } else {
+            &chrome_manifest
+        };
+        write_manifest(&target.dir, manifest);
     }
 }
 
@@ -287,16 +341,12 @@ pub fn remove_manifests() {
     let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
         return;
     };
-    let dirs = [
-        ".config/google-chrome/NativeMessagingHosts",
-        ".config/chromium/NativeMessagingHosts",
-        ".config/microsoft-edge/NativeMessagingHosts",
-        ".config/BraveSoftware/Brave-Browser/NativeMessagingHosts",
-        ".config/vivaldi/NativeMessagingHosts",
-        ".mozilla/native-messaging-hosts",
-    ];
-    for dir in dirs {
-        let path = home.join(dir).join(format!("{}.json", HOST_NAME));
+    remove_manifests_in(&home);
+}
+
+pub fn remove_manifests_in(home: &std::path::Path) {
+    for target in manifest_targets(home) {
+        let path = target.dir.join(format!("{}.json", HOST_NAME));
         let _ = std::fs::remove_file(path);
     }
 }

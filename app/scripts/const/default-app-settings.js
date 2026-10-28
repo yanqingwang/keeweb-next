@@ -80,7 +80,7 @@ const DefaultAppSettings = {
     webdav: true, // enable WebDAV integration
     webdavSaveMethod: 'move', // how to save files with WebDAV: "move" or "put"
     webdavStatReload: false,
-    nativeBrowserIntegration: true, // WebDAV: reload the file instead of relying on Last-Modified
+    nativeBrowserIntegration: true, // install the KeePassXC-Browser native-messaging host
 
     gdrive: true, // enable Google Drive integration
     gdriveClientId: null, // custom Google Drive client id

@@ -1,0 +1,5 @@
+# Installer binaries are published as GitHub release assets, not committed:
+# each build would otherwise add ~25 MB to the repository history forever.
+# build-macos.sh still writes them here; upload those to the release.
+*.dmg
+*.zip

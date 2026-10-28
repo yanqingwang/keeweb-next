@@ -113,8 +113,15 @@ flowchart LR
 * **KeePassXC-Browser**：通过 native messaging 直接连接。壳启动时会为
   Chrome/Chromium/Edge/Brave/Vivaldi 与 Firefox 写入
   `org.keepassxc.keepassxc_browser` 的主机清单，指向
-  `/usr/bin/keeweb-next-browser-host`；扩展按常规流程连接即可。若机器上同时装了
-  KeePassXC，同名清单会被最后安装的一方覆盖。
+  `/usr/bin/keeweb-next-browser-host`（macOS 指向
+  `KeeWeb Next.app/Contents/MacOS/keeweb-next-browser-host`）；扩展按常规流程
+  连接即可。若机器上同时装了 KeePassXC，同名清单会被最后安装的一方覆盖。
+  清单位置按平台区分：Linux 是 `~/.config/<浏览器>/NativeMessagingHosts` 与
+  `~/.mozilla/native-messaging-hosts`，macOS 统一在
+  `~/Library/Application Support/{<浏览器>,Mozilla}/…`。
+* 关联（association）与 `get-databasehash` 不要求已解锁数据库，和 KeePassXC 一致，
+  这样扩展首次连接即可完成关联；只有真正读写条目的动作（`get-logins`、
+  `set-login` 等）才要求数据库已解锁——需要先解锁数据库才能取到密码。
 * 协议对齐 KeePassHTTP v2.3.1.0：支持 `get-logins` / `get-logins-count` /
   `get-all-logins` / `get-logins-by-names` / `set-login`，响应带 HMAC-SHA256，
   `SubmitUrl` 参与匹配。
@@ -122,7 +129,7 @@ flowchart LR
   由扩展保存的登录会标记文件已修改并立即走正常保存/同步流程写入 WebDAV。
 * 其他设备写入的新数据需要应用先完成同步（打开文件、保存或自动保存时触发）；
   扩展不会在每次查询时强制拉取远端。
-* 需要先解锁数据库；关联关系保存在壳进程内，重启应用后需重新确认一次。
+* 关联关系保存在壳进程内，重启应用后需重新确认一次。
 
 ## 本机 HTTP API（KeePassHTTP 兼容）
 

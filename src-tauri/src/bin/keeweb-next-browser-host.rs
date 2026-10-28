@@ -1,4 +1,8 @@
 #[cfg(unix)]
+#[path = "../browser_socket.rs"]
+mod browser_socket;
+
+#[cfg(unix)]
 mod host {
 
 //! Native messaging host for KeePassXC-Browser.
@@ -10,24 +14,7 @@ mod host {
 
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
-use std::path::PathBuf;
 use std::time::Duration;
-
-fn socket_path() -> PathBuf {
-    if let Some(path) = std::env::var_os("KEEWEB_BROWSER_SOCKET") {
-        return PathBuf::from(path);
-    }
-    if let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR") {
-        return PathBuf::from(dir).join("keeweb-next-browser.sock");
-    }
-    let uid = std::process::Command::new("id")
-        .arg("-u")
-        .output()
-        .ok()
-        .and_then(|out| String::from_utf8_lossy(&out.stdout).trim().parse::<u32>().ok())
-        .unwrap_or(1000);
-    PathBuf::from(format!("/tmp/keeweb-next-{}-browser.sock", uid))
-}
 
 fn read_message<R: Read>(reader: &mut R) -> Option<Vec<u8>> {
     let mut len = [0u8; 4];
@@ -49,7 +36,7 @@ fn write_message<W: Write>(writer: &mut W, body: &[u8]) {
 }
 
 fn connect() -> Option<UnixStream> {
-    let path = socket_path();
+    let path = crate::browser_socket::socket_path();
     for _ in 0..20 {
         if let Ok(stream) = UnixStream::connect(&path) {
             let _ = stream.set_read_timeout(Some(Duration::from_secs(130)));

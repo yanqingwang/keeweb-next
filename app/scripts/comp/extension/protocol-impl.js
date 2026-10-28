@@ -415,9 +415,13 @@ const ProtocolHandlers = {
 
         if (request.triggerUnlock) {
             await checkContentRequestPermissions(request);
-        } else {
-            ensureAtLeastOneFileIsOpen();
         }
+        // No open vault is not an error here. The hash identifies this app, not
+        // the database, and KeePassXC answers in the same state too. Failing
+        // with an error code makes the extension set `isDatabaseClosed`, which
+        // aborts association before it is even attempted — the extension then
+        // reports that the app is not connected, which is what a user sees on
+        // first run. Actions that read or write entries still require a vault.
 
         return encryptResponse(request, {
             hash: KeeWebHash,
@@ -454,7 +458,10 @@ const ProtocolHandlers = {
 
     'associate'(request) {
         decryptRequest(request);
-        ensureAtLeastOneFileIsOpen();
+        // Association needs no vault: both the association id and the hash are
+        // constants, and the extension calls this right after the handshake.
+        // Refusing here leaves the extension permanently unassociated and the
+        // user without any way to connect.
 
         return encryptResponse(request, {
             success: 'true',

@@ -1,6 +1,10 @@
 #[cfg(unix)]
 pub mod browser_bridge;
 
+#[cfg(unix)]
+#[path = "browser_socket.rs"]
+pub mod browser_socket;
+
 #[cfg(not(unix))]
 mod browser_bridge {
     use serde_json::Value;

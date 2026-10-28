@@ -1,3 +1,6 @@
+#[cfg(unix)]
+mod host {
+
 //! Native messaging host for KeePassXC-Browser.
 //!
 //! The browser starts this helper when the extension opens its native port.
@@ -58,7 +61,7 @@ fn connect() -> Option<UnixStream> {
     None
 }
 
-fn main() {
+pub fn main() {
     let stdin = std::io::stdin();
     let mut input = stdin.lock();
     let mut output = std::io::stdout();
@@ -98,4 +101,18 @@ fn main() {
         }
         write_message(&mut output, line.trim_end().as_bytes());
     }
+}
+
+
+}
+
+#[cfg(unix)]
+fn main() {
+    host::main();
+}
+
+#[cfg(not(unix))]
+fn main() {
+    eprintln!("keeweb-next-browser-host is only supported on Linux and macOS");
+    std::process::exit(1);
 }

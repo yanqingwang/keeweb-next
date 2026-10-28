@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 //! Native-messaging bridge for browser extensions.
 //!
 //! The browser side is the mature KeePassXC-Browser extension: it speaks the

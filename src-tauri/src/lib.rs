@@ -1,4 +1,32 @@
+#[cfg(unix)]
 pub mod browser_bridge;
+
+#[cfg(not(unix))]
+mod browser_bridge {
+    use serde_json::Value;
+
+    pub struct BrowserState;
+
+    impl BrowserState {
+        pub fn new(_replies: std::sync::Arc<crate::Replies>) -> Self {
+            Self
+        }
+        pub fn set_enabled(&self, _enabled: bool) {}
+    }
+
+    #[tauri::command]
+    pub fn browser_rpc_reply(
+        _reply: crate::vault_bridge::VaultRpcReply,
+    ) -> Result<(), String> {
+        Err("native messaging is only supported on Linux and macOS".to_string())
+    }
+
+    #[tauri::command]
+    pub fn set_browser_integration(_enabled: bool) {}
+
+    #[allow(dead_code)]
+    fn _unused(_: Option<Value>) {}
+}
 pub mod config_store;
 mod fs_ops;
 pub mod keepasshttp;
@@ -88,6 +116,36 @@ impl Replies {
     }
 }
 
+#[cfg(unix)]
+fn setup_browser_bridge(app: &tauri::App) {
+    use tauri::Manager;
+    let browser_state = std::sync::Arc::new(browser_bridge::BrowserState::new(
+        std::sync::Arc::new(Replies::new()),
+    ));
+    let native_enabled = app
+        .path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("config/app-settings.json"))
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .and_then(|body| serde_json::from_str::<serde_json::Value>(&body).ok())
+        .and_then(|settings| {
+            settings
+                .get("nativeBrowserIntegration")
+                .and_then(serde_json::Value::as_bool)
+        })
+        .unwrap_or(true);
+    browser_state.set_enabled(native_enabled);
+    app.manage(browser_state.clone());
+    let handle = app.handle().clone();
+    std::thread::spawn(move || {
+        browser_bridge::serve(handle, browser_state);
+    });
+}
+
+#[cfg(not(unix))]
+fn setup_browser_bridge(_app: &tauri::App) {}
+
 /// Serves the embedded web assets over localhost HTTP.
 ///
 /// WebKitGTK renders the app white when the same assets are served through
@@ -151,24 +209,7 @@ pub fn run() {
             app.manage(config_store::State(store.clone()));
             let replies = std::sync::Arc::new(Replies::new());
             app.manage(replies.clone());
-            let browser_state = std::sync::Arc::new(browser_bridge::BrowserState::new(
-                std::sync::Arc::new(Replies::new()),
-            ));
-            let native_enabled = app
-                .path()
-                .app_data_dir()
-                .ok()
-                .map(|dir| dir.join("config/app-settings.json"))
-                .and_then(|path| std::fs::read_to_string(path).ok())
-                .and_then(|body| serde_json::from_str::<serde_json::Value>(&body).ok())
-                .and_then(|settings| {
-                    settings
-                        .get("nativeBrowserIntegration")
-                        .and_then(serde_json::Value::as_bool)
-                })
-                .unwrap_or(true);
-            browser_state.set_enabled(native_enabled);
-            app.manage(browser_state.clone());
+            setup_browser_bridge(app);
             let vault = WebviewVault::new(handle.clone(), replies);
             let state = std::sync::Arc::new(ServerState {
                 associations: std::sync::Mutex::new(Default::default()),
@@ -180,9 +221,6 @@ pub fn run() {
             let http_handle = handle.clone();
             std::thread::spawn(move || {
                 keepasshttp::serve(state, http_handle);
-            });
-            std::thread::spawn(move || {
-                browser_bridge::serve(handle, browser_state);
             });
             Ok(())
         })

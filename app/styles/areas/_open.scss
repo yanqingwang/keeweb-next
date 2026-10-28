@@ -305,6 +305,25 @@
             &-text {
                 flex-grow: 1;
             }
+            &-icon-star {
+                opacity: 0;
+                .open__last-item:hover & {
+                    opacity: 0.35;
+                    cursor: pointer;
+                }
+                color: var(--muted-color);
+                margin-right: 0.6em;
+                &:hover {
+                    .open__last-item:hover & {
+                        opacity: 1;
+                    }
+                    color: var(--action-color);
+                }
+                &--pinned {
+                    opacity: 0.9;
+                    color: var(--action-color);
+                }
+            }
             &-icon-del {
                 opacity: 0;
                 .open__last-item:hover & {

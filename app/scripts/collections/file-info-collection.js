@@ -11,11 +11,27 @@ class FileInfoCollection extends Collection {
                 for (const item of data) {
                     this.push(new FileInfoModel(item));
                 }
+                if (this.prune()) {
+                    SettingsStore.save('file-info', this);
+                }
             }
         });
     }
 
+    prune() {
+        // pinned entries are kept like bookmarks; the plain history keeps the
+        // five most recent entries, newest first
+        const recent = this.filter((fileInfo) => !fileInfo.pinned);
+        let removed = 0;
+        for (const fileInfo of recent.slice(FileInfoCollection.HistoryLimit)) {
+            this.remove(fileInfo.id);
+            removed++;
+        }
+        return removed;
+    }
+
     save() {
+        this.prune();
         SettingsStore.save('file-info', this);
     }
 
@@ -33,6 +49,8 @@ class FileInfoCollection extends Collection {
         return this.find((file) => file.name.toLowerCase() === name.toLowerCase());
     }
 }
+
+FileInfoCollection.HistoryLimit = 5;
 
 const instance = new FileInfoCollection();
 

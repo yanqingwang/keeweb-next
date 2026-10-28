@@ -109,6 +109,8 @@
                      id="open__last-item--{{file.id}}">
                     {{#if file.icon}}<i class="fa fa-{{file.icon}} open__last-item-icon"></i>{{/if}}
                     <span class="open__last-item-text">{{file.name}}</span>
+                    <i class="fa {{#if file.pinned}}fa-star{{else}}fa-star-o{{/if}} open__last-item-icon-star{{#if file.pinned}} open__last-item-icon-star--pinned{{/if}}"
+                       title="{{#if file.pinned}}{{res 'openUnpinFile'}}{{else}}{{res 'openPinFile'}}{{/if}}"></i>
                     {{#if ../canRemoveLatest}}<i class="fa fa-times open__last-item-icon-del"></i>{{/if}}
                 </div>
             {{/each}}

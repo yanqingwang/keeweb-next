@@ -82,7 +82,9 @@ flowchart LR
 * 插件仓库：`plugins/` 内置 5 个 KeeWeb 插件（快捷搜索、复制热键、打开 URL、
   密码年龄标记、重复项检查），画廊 `plugins.json`（jsDelivr 镜像，raw 作为回退）已签名并指向本仓库
   （`Links.Plugins`），签名方式见 `plugins/README.md`。
-* Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制 + `plugins/` 离线副本）。
+* 打开记录：最近 5 条保留在打开页，可点星标「收藏」置顶，收藏项不受 5 条上限裁剪。
+* Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制 + `plugins/` 与
+  `browser-extension/` 离线副本）。
 
 ## 尚未完成 / 路线图
 

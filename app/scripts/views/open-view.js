@@ -51,6 +51,7 @@ class OpenView extends View {
         'click .open__settings-key-file': 'openKeyFile',
         'click .open__settings-yubikey': 'selectYubiKeyChalResp',
         'click .open__last-item': 'openLast',
+        'click .open__last-item-icon-star': 'togglePinLast',
         'click .open__icon-generate': 'toggleGenerator',
         'click .open__message-cancel-btn': 'openMessageCancelClick',
         dragover: 'dragover',
@@ -164,19 +165,23 @@ class OpenView extends View {
     }
 
     getLastOpenFiles() {
-        return this.model.fileInfos.map((fileInfo) => {
-            let icon = 'file-alt';
-            const storage = Storage[fileInfo.storage];
-            if (storage && storage.icon) {
-                icon = storage.icon;
-            }
-            return {
-                id: fileInfo.id,
-                name: fileInfo.name,
-                path: this.getDisplayedPath(fileInfo),
-                icon
-            };
-        });
+        return this.model.fileInfos
+            .slice()
+            .sort((a, b) => Number(b.pinned) - Number(a.pinned))
+            .map((fileInfo) => {
+                let icon = 'file-alt';
+                const storage = Storage[fileInfo.storage];
+                if (storage && storage.icon) {
+                    icon = storage.icon;
+                }
+                return {
+                    id: fileInfo.id,
+                    name: fileInfo.name,
+                    path: this.getDisplayedPath(fileInfo),
+                    icon,
+                    pinned: !!fileInfo.pinned
+                };
+            });
     }
 
     getDisplayedPath(fileInfo) {
@@ -442,6 +447,9 @@ class OpenView extends View {
             return;
         }
         const id = $(e.target).closest('.open__last-item').data('id').toString();
+        if ($(e.target).closest('.open__last-item-icon-star').length) {
+            return;
+        }
         if ($(e.target).is('.open__last-item-icon-del')) {
             const fileInfo = this.model.fileInfos.get(id);
             if (!fileInfo.storage || fileInfo.modified) {
@@ -990,6 +998,23 @@ class OpenView extends View {
         }
         const fileInfo = this.model.fileInfos.get(lastOpenFiles[this.currentSelectedIndex].id);
         this.showOpenFileInfo(fileInfo);
+    }
+
+    togglePinLast(e) {
+        e.stopPropagation();
+        const id = $(e.target).closest('.open__last-item').data('id').toString();
+        const fileInfo = this.model.fileInfos.get(id);
+        if (!fileInfo) {
+            return;
+        }
+        fileInfo.pinned = !fileInfo.pinned;
+        this.model.fileInfos.save();
+        const hadFocus = document.activeElement === this.inputEl && this.inputEl.val();
+        this.render();
+        if (hadFocus) {
+            this.inputEl.val(hadFocus);
+            this.inputEl.focus();
+        }
     }
 
     moveOpenFileSelectionDown() {

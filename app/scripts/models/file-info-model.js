@@ -11,6 +11,7 @@ const DefaultProperties = {
     rev: null,
     syncDate: null,
     openDate: null,
+    pinned: false,
     keyFileName: null,
     keyFileHash: null,
     keyFilePath: null,

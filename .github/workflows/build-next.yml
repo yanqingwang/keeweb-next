@@ -76,11 +76,11 @@ jobs:
       - name: Build web
         run: npm run build:web
       - name: Build shell
-        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+        # use the CLI pinned in package.json — tauri-action bundles its own,
+        # whose config schema rejected enable-gtk-app-id
+        run: npx tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
       - name: Test (Rust)
         if: runner.os != 'Windows'
         run: cargo test --manifest-path src-tauri/Cargo.toml

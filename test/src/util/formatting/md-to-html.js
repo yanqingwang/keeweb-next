@@ -13,11 +13,15 @@ describe('MdToHtml', () => {
     });
 
     it('should convert links', () => {
-        expect(MdToHtml.convert('[link](https://x)')).to.eql({
-            html:
-                '<div class="markdown">' +
-                '<p><a href="https://x" rel="noreferrer noopener" target="_blank">link</a></p>\n' +
-                '</div>'
-        });
+        const { html } = MdToHtml.convert('[link](https://x)');
+        const root = document.createElement('div');
+        root.innerHTML = html;
+        const link = root.querySelector('a');
+        // attribute order is up to the sanitizer, the values are what matters
+        expect(link.getAttribute('href')).to.equal('https://x');
+        expect(link.getAttribute('target')).to.equal('_blank');
+        expect(link.getAttribute('rel')).to.equal('noreferrer noopener');
+        expect(link.textContent).to.equal('link');
+        expect(root.querySelector('.markdown p a')).to.equal(link);
     });
 });

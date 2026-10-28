@@ -13,8 +13,9 @@ protocol, while KeeWeb Next exposes KeePassHTTP.
    package it lives at `/usr/share/keeweb-next/browser-extension`.
 4. Open any login page, click the KeeWeb Next icon and **Connect to the app**.
    The app asks once for permission.
-5. The popup lists matching logins (matched by host) and can fill them, or
-   save the credentials currently typed into the page.
+5. Focusing a login field on any page opens a small menu with the entries
+   matching that host; picking one fills the form. The popup also lists the
+   matches and can save the credentials currently typed into the page.
 
 ## Firefox
 

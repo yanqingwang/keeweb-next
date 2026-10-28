@@ -39,7 +39,9 @@ impl Vault for FakeVault {
                     unlocked: true,
                 })
             }
-            VaultRequest::GetLogins(_) => Ok(VaultAnswer {
+            VaultRequest::GetLogins(_)
+            | VaultRequest::GetAllLogins
+            | VaultRequest::GetLoginsByNames { .. } => Ok(VaultAnswer {
                 entries: self.entries.clone(),
                 allowed: self.allowed,
                 unlocked: self.unlocked,

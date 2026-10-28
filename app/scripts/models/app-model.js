@@ -536,6 +536,21 @@ class AppModel {
         if (!params.opts && fileInfo && fileInfo.opts) {
             params.opts = fileInfo.opts;
         }
+        // stored storage options keep the password obfuscated against the
+        // database uuid; decode them before the first request when the uuid
+        // is known from a previous session
+        if (
+            params.opts &&
+            fileInfo &&
+            fileInfo.uuid &&
+            params.storage &&
+            Storage[params.storage] &&
+            Storage[params.storage].storeOptsToFileOpts
+        ) {
+            params.opts = Storage[params.storage].storeOptsToFileOpts(params.opts, {
+                uuid: fileInfo.uuid
+            });
+        }
 
         if (fileInfo && fileInfo.modified) {
             logger.info('Open file from cache because it is modified');
@@ -800,6 +815,7 @@ class AppModel {
         const dt = new Date();
         const fileInfo = new FileInfoModel({
             id: file.id,
+            uuid: file.uuid || '',
             name: file.name,
             storage: file.storage,
             path: file.path,
@@ -955,6 +971,7 @@ class AppModel {
             file.setSyncComplete(path, storage, err ? err.toString() : null);
             fileInfo.set({
                 name: file.name,
+                uuid: file.uuid || fileInfo.uuid || '',
                 storage,
                 path,
                 opts: this.getStoreOpts(file),

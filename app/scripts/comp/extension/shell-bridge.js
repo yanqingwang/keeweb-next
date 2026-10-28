@@ -54,6 +54,15 @@ function hostMatches(entryHost, targetHost) {
     );
 }
 
+function toVaultEntry(entry) {
+    return {
+        uuid: entry.uuid,
+        title: entry.title || '',
+        login: entry.user || '',
+        password: entry.password ? entry.password.getText() : ''
+    };
+}
+
 const handlers = {
     // vault status for the HTTP API: no unlocked database, no queries
     'vault.status'() {
@@ -121,7 +130,7 @@ const handlers = {
         return { allowed: true, unlocked: true, uuid: entry.id };
     },
 
-    'vault.find-logins'({ url }) {
+    'vault.find-logins'({ url, submitUrl }) {
         const file = unlockedFile();
         if (!file) {
             throw new Error('vault locked');
@@ -129,23 +138,46 @@ const handlers = {
         if (typeof url !== 'string' || !url) {
             throw new Error('bad request');
         }
-        const target = hostOf(url);
-        if (!target) {
+        const targets = [hostOf(url), submitUrl ? hostOf(submitUrl) : ''].filter(Boolean);
+        if (!targets.length) {
             throw new Error('bad url');
         }
         const matches = [];
         for (const entry of Object.values(file.entryMap)) {
-            if (!hostMatches(hostOf(entry.url), target)) {
+            const entryHost = hostOf(entry.url);
+            if (!targets.some((target) => hostMatches(entryHost, target))) {
                 continue;
             }
-            matches.push({
-                uuid: entry.uuid,
-                title: entry.title || '',
-                login: entry.user || '',
-                password: entry.password ? entry.password.getText() : ''
-            });
+            matches.push(toVaultEntry(entry));
         }
         return { allowed: true, unlocked: true, entries: matches };
+    },
+
+    'vault.all-logins'() {
+        const file = unlockedFile();
+        if (!file) {
+            throw new Error('vault locked');
+        }
+        return {
+            allowed: true,
+            unlocked: true,
+            entries: Object.values(file.entryMap).map(toVaultEntry)
+        };
+    },
+
+    'vault.find-by-names'({ names }) {
+        const file = unlockedFile();
+        if (!file) {
+            throw new Error('vault locked');
+        }
+        const wanted = new Set((names || []).map((name) => String(name).toLowerCase()));
+        const entries = [];
+        for (const entry of Object.values(file.entryMap)) {
+            if (wanted.has((entry.title || '').toLowerCase())) {
+                entries.push(toVaultEntry(entry));
+            }
+        }
+        return { allowed: true, unlocked: true, entries };
     }
 };
 

@@ -3,6 +3,7 @@ import { pick } from 'util/fn';
 
 const DefaultProperties = {
     id: '',
+    uuid: '',
     name: '',
     storage: null,
     path: null,

@@ -891,6 +891,7 @@ class OpenView extends View {
         if (this.views.openConfig) {
             this.views.openConfig.remove();
         }
+        const lastFile = this.model.fileInfos.find((fi) => fi.storage === storage.name);
         const config = {
             id: storage.name,
             name: Locale[storage.name] || storage.name,
@@ -898,6 +899,23 @@ class OpenView extends View {
             buttons: true,
             ...storage.getOpenConfig()
         };
+        if (lastFile) {
+            // reopen the last configuration instead of asking for everything
+            // again; the password is only present when the database uuid is
+            // already known
+            let opts = lastFile.opts || {};
+            if (lastFile.uuid && storage.storeOptsToFileOpts) {
+                opts = storage.storeOptsToFileOpts(opts, { uuid: lastFile.uuid });
+            }
+            const values = {
+                path: lastFile.path,
+                user: opts.user,
+                password: opts.password
+            };
+            config.fields = config.fields.map((field) =>
+                values[field.id] ? { ...field, value: values[field.id] } : field
+            );
+        }
         this.views.openConfig = new OpenConfigView(config, {
             parent: '.open__config-wrap'
         });

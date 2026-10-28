@@ -61,6 +61,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         status,
         associate: () => associate(),
         'get-logins': () => getLogins(message.url),
+        'page-logins': () => getLogins(message.url),
         'save-login': () => saveLogin(message.url, message.username, message.password),
         forget: async () => {
             await ready();

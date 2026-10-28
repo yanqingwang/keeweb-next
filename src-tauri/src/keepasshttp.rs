@@ -20,7 +20,9 @@ use cbc::cipher::{
     block_padding::Pkcs7, BlockModeDecrypt, BlockModeEncrypt, KeyIvInit,
 };
 use serde::{Deserialize, Serialize};
+use hmac::{Hmac, Mac};
 use sha1::{Digest, Sha1};
+use sha2::Sha256;
 
 pub const PORT: u16 = 19455;
 /// Where associated keys are stored inside the vault ("KeePassHttp Settings"
@@ -28,6 +30,9 @@ pub const PORT: u16 = 19455;
 /// persists an approved association.
 #[allow(dead_code)] // the webview side uses it when persisting approvals
 pub const ASSOCIATE_KEY_PREFIX: &str = "AES Key: ";
+/// Protocol level of the upstream KeePassHTTP this endpoint follows. Clients
+/// only display it, but keeping it in step documents what we implement.
+pub const PROTOCOL_VERSION: &str = "2.3.1.0";
 
 /// Enforced by the HTTP layer once the listener is wired into the shell.
 pub const MAX_REQUEST_BODY: usize = 1 << 20;
@@ -80,6 +85,12 @@ pub struct Request {
     pub verifier: Option<String>,
     #[serde(default)]
     pub nonce: Option<String>,
+    #[serde(default)]
+    pub hmac: Option<String>,
+    #[serde(default)]
+    pub names: Vec<String>,
+    #[serde(default)]
+    pub realm: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -100,6 +111,8 @@ pub struct Response {
     pub nonce: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub verifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hmac: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -132,6 +145,8 @@ pub struct VaultQuery {
     pub url: String,
     #[allow(dead_code)] // handed to the webview for host-based permissions
     pub submit_url: Option<String>,
+    #[allow(dead_code)]
+    pub realm: Option<String>,
 }
 
 pub struct VaultAnswer {
@@ -157,6 +172,10 @@ pub enum VaultRequest {
     ConfirmAssociation { key: Vec<u8> },
     /// Look up matching entries for an (already decrypted) url.
     GetLogins(VaultQuery),
+    /// Every entry of the unlocked database.
+    GetAllLogins,
+    /// Entries whose title matches one of the names.
+    GetLoginsByNames { names: Vec<String> },
     /// Write a login into the vault (confirmed by the user in the webview).
     SetLogin {
         uuid: Option<String>,
@@ -213,13 +232,29 @@ pub fn verify(verifier: &str, nonce: &str, key: &[u8]) -> Result<bool, &'static 
     Ok(plain == nonce.as_bytes())
 }
 
-fn key_for(
-    state: &ServerState,
-    id: &Option<String>,
-    verifier: &Option<String>,
-    nonce: &Option<String>,
-) -> Result<Association, Box<Response>> {
-    let (Some(id), Some(verifier), Some(nonce)) = (id, verifier, nonce) else {
+fn verify_request_hmac(request: &Request, association: &Association) -> bool {
+    let (Some(hmac_b64), Some(verifier_b64), Some(nonce_b64)) =
+        (&request.hmac, &request.verifier, &request.nonce)
+    else {
+        return true; // older clients do not send it
+    };
+    let (Ok(received), Ok(cipher), Ok(iv)) = (
+        STANDARD.decode(hmac_b64),
+        STANDARD.decode(verifier_b64),
+        STANDARD.decode(nonce_b64),
+    ) else {
+        return false;
+    };
+    let mut mac = Hmac::<Sha256>::new_from_slice(&association.key).expect("hmac key");
+    mac.update(&iv);
+    mac.update(&cipher);
+    mac.verify_slice(&received).is_ok()
+}
+
+fn key_for(state: &ServerState, request: &Request) -> Result<Association, Box<Response>> {
+    let (Some(id), Some(verifier), Some(nonce)) =
+        (&request.id, &request.verifier, &request.nonce)
+    else {
         return Err(Box::new(error_response("", "", None)));
     };
     let associations = state.associations.lock().expect("associations lock");
@@ -227,7 +262,12 @@ fn key_for(
         return Err(Box::new(error_response("", "", None)));
     };
     match verify(verifier, nonce, &association.key) {
-        Ok(true) => Ok(association.clone()),
+        Ok(true) => {
+            if !verify_request_hmac(request, association) {
+                return Err(Box::new(error_response("", "", None)));
+            }
+            Ok(association.clone())
+        }
         _ => Err(Box::new(error_response("", "", None))),
     }
 }
@@ -239,11 +279,12 @@ fn error_response(request_type: &str, hash: &str, id: Option<String>) -> Respons
         success: false,
         id,
         count: 0,
-        version: env!("CARGO_PKG_VERSION"),
+        version: PROTOCOL_VERSION,
         hash: hash.to_string(),
         entries: None,
         nonce: None,
         verifier: None,
+        hmac: None,
     }
 }
 
@@ -255,13 +296,13 @@ fn plain_response(
     let mut nonce = [0u8; 16];
     getrandom::fill(&mut nonce).expect("OS entropy unavailable");
     let nonce_b64 = STANDARD.encode(nonce);
-    let response = Response {
+    let mut response = Response {
         request_type: request_type.to_string(),
         error: None,
         success: true,
         id: Some(association.id.clone()),
         count: 0,
-        version: env!("CARGO_PKG_VERSION"),
+        version: PROTOCOL_VERSION,
         hash: hash.to_string(),
         entries: None,
         // clients verify Verifier by decrypting it with IV = Nonce and
@@ -273,7 +314,13 @@ fn plain_response(
             &nonce,
         ))),
         nonce: Some(nonce_b64),
+        hmac: None,
     };
+    let cipher = STANDARD.decode(response.verifier.as_deref().unwrap_or_default()).unwrap_or_default();
+    let mut mac = Hmac::<Sha256>::new_from_slice(&association.key).expect("hmac key");
+    mac.update(&nonce);
+    mac.update(&cipher);
+    response.hmac = Some(STANDARD.encode(mac.finalize().into_bytes()));
     (response, nonce)
 }
 
@@ -397,16 +444,66 @@ fn serve_one(
     Ok(())
 }
 
+fn entries_response(
+    request_type: &str,
+    hash: &str,
+    association: &Association,
+    entries: &[VaultEntry],
+) -> Response {
+    let (mut response, response_nonce) = plain_response(request_type, hash, association);
+    response.count = entries.len() as u32;
+    response.entries = Some(
+        entries
+            .iter()
+            .map(|entry| ResponseEntry {
+                login: STANDARD.encode(encrypt(
+                    entry.login.as_bytes(),
+                    &association.key,
+                    &response_nonce,
+                )),
+                password: Some(STANDARD.encode(encrypt(
+                    entry.password.as_bytes(),
+                    &association.key,
+                    &response_nonce,
+                ))),
+                uuid: STANDARD.encode(encrypt(
+                    entry.uuid.as_bytes(),
+                    &association.key,
+                    &response_nonce,
+                )),
+                name: STANDARD.encode(encrypt(
+                    entry.name.as_bytes(),
+                    &association.key,
+                    &response_nonce,
+                )),
+                string_fields: None,
+            })
+            .collect(),
+    );
+    response
+}
+
+fn locked_error(request_type: &str, hash: &str, id: &str) -> Response {
+    let mut response = error_response(request_type, hash, Some(id.to_string()));
+    response.error = Some("database is locked".to_string());
+    response
+}
+
+fn rejected_error(request_type: &str, hash: &str, id: &str) -> Response {
+    let mut response = error_response(request_type, hash, Some(id.to_string()));
+    response.error = Some("user rejected the request".to_string());
+    response
+}
+
 pub fn handle_request(state: &ServerState, request: Request) -> Response {
     let hash = state.vault.database_hash().unwrap_or_default();
 
     match request.request_type.as_str() {
         "test-associate" => {
-            let association =
-                match key_for(state, &request.id, &request.verifier, &request.nonce) {
-                    Ok(a) => a,
-                    Err(response) => return *response,
-                };
+            let association = match key_for(state, &request) {
+                Ok(a) => a,
+                Err(response) => return *response,
+            };
             let (mut response, _) = plain_response("test-associate", &hash, &association);
             response.count = 0;
             response
@@ -464,8 +561,7 @@ pub fn handle_request(state: &ServerState, request: Request) -> Response {
             response
         }
         "get-logins" | "get-logins-count" => {
-            let association = match key_for(state, &request.id, &request.verifier, &request.nonce)
-            {
+            let association = match key_for(state, &request) {
                 Ok(a) => a,
                 Err(response) => return *response,
             };
@@ -518,66 +614,129 @@ pub fn handle_request(state: &ServerState, request: Request) -> Response {
                 None => None,
             };
 
+            let realm = match &request.realm {
+                Some(realm_b64) => {
+                    let (Ok(bytes), Ok(iv)) =
+                        (STANDARD.decode(realm_b64), STANDARD.decode(nonce))
+                    else {
+                        return error_response(
+                            &request.request_type,
+                            &hash,
+                            Some(association.id.clone()),
+                        );
+                    };
+                    match decrypt(&bytes, &association.key, &iv) {
+                        Ok(plain) => String::from_utf8(plain).ok(),
+                        Err(_) => {
+                            return error_response(
+                                &request.request_type,
+                                &hash,
+                                Some(association.id.clone()),
+                            )
+                        }
+                    }
+                }
+                None => None,
+            };
+
             let answer = state
                 .vault
-                .request(VaultRequest::GetLogins(VaultQuery { url, submit_url }))
+                .request(VaultRequest::GetLogins(VaultQuery {
+                    url,
+                    submit_url,
+                    realm,
+                }))
                 .unwrap_or_else(|_| VaultAnswer {
                     entries: vec![],
                     allowed: false,
                     unlocked: false,
                 });
             if !answer.unlocked {
-                let mut response =
-                    error_response(&request.request_type, &hash, Some(association.id.clone()));
-                response.error = Some("database is locked".to_string());
-                return response;
+                return locked_error(&request.request_type, &hash, &association.id);
             }
             if !answer.allowed {
-                let mut response =
-                    error_response(&request.request_type, &hash, Some(association.id.clone()));
-                response.error = Some("user rejected the request".to_string());
+                return rejected_error(&request.request_type, &hash, &association.id);
+            }
+            if request.request_type == "get-logins-count" {
+                let (mut response, _) = plain_response(&request.request_type, &hash, &association);
+                response.count = answer.entries.len() as u32;
                 return response;
             }
-
-            let (mut response, response_nonce) =
-                plain_response(&request.request_type, &hash, &association);
-            response.count = answer.entries.len() as u32;
-            if request.request_type == "get-logins" {
-                response.entries = Some(
-                    answer
-                        .entries
-                        .iter()
-                        .map(|entry| ResponseEntry {
-                            login: STANDARD.encode(encrypt(
-                                entry.login.as_bytes(),
-                                &association.key,
-                                &response_nonce,
-                            )),
-                            password: Some(STANDARD.encode(encrypt(
-                                entry.password.as_bytes(),
-                                &association.key,
-                                &response_nonce,
-                            ))),
-                            uuid: STANDARD.encode(encrypt(
-                                entry.uuid.as_bytes(),
-                                &association.key,
-                                &response_nonce,
-                            )),
-                            name: STANDARD.encode(encrypt(
-                                entry.name.as_bytes(),
-                                &association.key,
-                                &response_nonce,
-                            )),
-                            string_fields: None,
-                        })
-                        .collect(),
-                );
+            entries_response(&request.request_type, &hash, &association, &answer.entries)
+        }
+        "get-all-logins" => {
+            let association = match key_for(state, &request) {
+                Ok(a) => a,
+                Err(response) => return *response,
+            };
+            let answer = state
+                .vault
+                .request(VaultRequest::GetAllLogins)
+                .unwrap_or_else(|_| VaultAnswer {
+                    entries: vec![],
+                    allowed: false,
+                    unlocked: false,
+                });
+            if !answer.unlocked {
+                return locked_error("get-all-logins", &hash, &association.id);
             }
-            response
+            if !answer.allowed {
+                return rejected_error("get-all-logins", &hash, &association.id);
+            }
+            entries_response("get-all-logins", &hash, &association, &answer.entries)
+        }
+        "get-logins-by-names" => {
+            let association = match key_for(state, &request) {
+                Ok(a) => a,
+                Err(response) => return *response,
+            };
+            let Some(nonce) = request.nonce.as_deref() else {
+                return error_response("get-logins-by-names", &hash, Some(association.id.clone()));
+            };
+            let Ok(iv) = STANDARD.decode(nonce) else {
+                return error_response("get-logins-by-names", &hash, Some(association.id.clone()));
+            };
+            let mut names = Vec::with_capacity(request.names.len());
+            for name_b64 in &request.names {
+                let Ok(bytes) = STANDARD.decode(name_b64) else {
+                    return error_response(
+                        "get-logins-by-names",
+                        &hash,
+                        Some(association.id.clone()),
+                    );
+                };
+                match decrypt(&bytes, &association.key, &iv)
+                    .ok()
+                    .and_then(|plain| String::from_utf8(plain).ok())
+                {
+                    Some(name) => names.push(name),
+                    None => {
+                        return error_response(
+                            "get-logins-by-names",
+                            &hash,
+                            Some(association.id.clone()),
+                        )
+                    }
+                }
+            }
+            let answer = state
+                .vault
+                .request(VaultRequest::GetLoginsByNames { names })
+                .unwrap_or_else(|_| VaultAnswer {
+                    entries: vec![],
+                    allowed: false,
+                    unlocked: false,
+                });
+            if !answer.unlocked {
+                return locked_error("get-logins-by-names", &hash, &association.id);
+            }
+            if !answer.allowed {
+                return rejected_error("get-logins-by-names", &hash, &association.id);
+            }
+            entries_response("get-logins-by-names", &hash, &association, &answer.entries)
         }
         "set-login" => {
-            let association = match key_for(state, &request.id, &request.verifier, &request.nonce)
-            {
+            let association = match key_for(state, &request) {
                 Ok(a) => a,
                 Err(response) => return *response,
             };

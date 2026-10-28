@@ -90,9 +90,18 @@ impl Vault for WebviewVault {
                 // the webview shows the confirmation dialog
                 ("vault.confirm-association".to_string(), serde_json::json!({}))
             }
-            VaultRequest::GetLogins(VaultQuery { url, .. }) => (
+            VaultRequest::GetLogins(VaultQuery {
+                url,
+                submit_url,
+                realm,
+            }) => (
                 "vault.find-logins".to_string(),
-                serde_json::json!({ "url": url }),
+                serde_json::json!({ "url": url, "submitUrl": submit_url, "realm": realm }),
+            ),
+            VaultRequest::GetAllLogins => ("vault.all-logins".to_string(), serde_json::json!({})),
+            VaultRequest::GetLoginsByNames { names } => (
+                "vault.find-by-names".to_string(),
+                serde_json::json!({ "names": names }),
             ),
             VaultRequest::SetLogin { login, password, url, .. } => (
                 "vault.set-login".to_string(),

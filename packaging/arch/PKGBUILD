@@ -1,7 +1,7 @@
 # Maintainer: yanqingwang
 pkgname=keeweb-next
 pkgver=0.1.0
-pkgrel=7
+pkgrel=8
 pkgdesc='KeeWeb as a web app, with an optional Tauri webview shell (WebDAV without CORS limits)'
 arch=('x86_64' 'aarch64')
 url='https://github.com/yanqingwang/keeweb-next'

@@ -83,6 +83,8 @@ flowchart LR
   密码年龄标记、重复项检查），画廊 `plugins.json`（jsDelivr 镜像，raw 作为回退）已签名并指向本仓库
   （`Links.Plugins`），签名方式见 `plugins/README.md`。
 * 打开记录：最近 5 条保留在打开页，可点星标「收藏」置顶，收藏项不受 5 条上限裁剪。
+* WebDAV 连接信息随记录保存（数据库 uuid 参与的混淆密码），再次打开时自动回填
+  URL、用户名与密码，无需重输。
 * Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制 + `plugins/` 与
   `browser-extension/` 离线副本）。
 
@@ -102,10 +104,15 @@ flowchart LR
   同目录的 `manifest.firefox.json` 改名）。打开 `chrome://extensions` → 开发者模式 →
   「加载已解压的扩展程序」→ 选择该目录（Arch 包内路径
   `/usr/share/keeweb-next/browser-extension`），点扩展图标 →「Connect to the app」。
+  连接后聚焦页面上的登录框会直接弹出匹配的账号菜单，点选即填充；也可在扩展弹窗里
+  保存当前页面已输入的登录。
 * **第三方扩展**：任何 KeePassHTTP 客户端都可以直连该端点，例如 chromeIPass、
   KeePassHttp-Connector。
 * **KeePassXC-Browser 不支持**：它只走 KeePassXC 自己的 native messaging 协议，
   与本端点不兼容。
+* 协议对齐 KeePassHTTP v2.3.1.0：支持 `get-logins` / `get-logins-count` /
+  `get-all-logins` / `get-logins-by-names` / `set-login`，响应带 HMAC-SHA256，
+  `SubmitUrl` 参与匹配。
 * 需要先解锁数据库；关联关系保存在壳进程内，重启应用后需重新确认一次。
 
 ## 本机 HTTP API（KeePassHTTP 兼容）

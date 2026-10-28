@@ -23,7 +23,9 @@ build() {
     npm run build:web
 
     cd src-tauri
-    cargo build --release
+    # /tmp is a small tmpfs; the Rust build needs several GB, so keep the
+    # target dir on the real filesystem
+    CARGO_TARGET_DIR="$srcdir/../cargo-target" cargo build --release
 }
 
 package() {
@@ -34,7 +36,7 @@ package() {
     install -d "$pkgdir/usr/share/keeweb-next"
     cp -a dist "$pkgdir/usr/share/keeweb-next/dist"
 
-    install -Dm755 src-tauri/target/release/keeweb-next \
+    install -Dm755 "$srcdir/../cargo-target/release/keeweb-next" \
         "$pkgdir/usr/bin/keeweb-next"
 
     # desktop application integration

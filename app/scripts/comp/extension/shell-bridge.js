@@ -54,6 +54,14 @@ function hostMatches(entryHost, targetHost) {
     );
 }
 
+function allEntries(file) {
+    const entries = [];
+    // walk the live model, not file.entryMap: entries added by the extension
+    // or by the user after the file was opened are not in that snapshot
+    file.forEachEntry({ includeDisabled: true }, (entry) => entries.push(entry));
+    return entries;
+}
+
 function toVaultEntry(entry) {
     return {
         uuid: entry.uuid,
@@ -127,6 +135,12 @@ const handlers = {
             Password: password,
             URL: url
         });
+        // newEntry marks the file modified; push it through the normal save
+        // path so the login reaches WebDAV instead of living in memory only
+        const appModel = AppModel.instance;
+        if (appModel && file.storage) {
+            setTimeout(() => appModel.syncFile(file, {}, () => {}), 0);
+        }
         return { allowed: true, unlocked: true, uuid: entry.id };
     },
 
@@ -143,7 +157,7 @@ const handlers = {
             throw new Error('bad url');
         }
         const matches = [];
-        for (const entry of Object.values(file.entryMap)) {
+        for (const entry of allEntries(file)) {
             const entryHost = hostOf(entry.url);
             if (!targets.some((target) => hostMatches(entryHost, target))) {
                 continue;
@@ -161,7 +175,7 @@ const handlers = {
         return {
             allowed: true,
             unlocked: true,
-            entries: Object.values(file.entryMap).map(toVaultEntry)
+            entries: allEntries(file).map(toVaultEntry)
         };
     },
 
@@ -172,7 +186,7 @@ const handlers = {
         }
         const wanted = new Set((names || []).map((name) => String(name).toLowerCase()));
         const entries = [];
-        for (const entry of Object.values(file.entryMap)) {
+        for (const entry of allEntries(file)) {
             if (wanted.has((entry.title || '').toLowerCase())) {
                 entries.push(toVaultEntry(entry));
             }

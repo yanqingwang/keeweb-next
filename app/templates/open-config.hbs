@@ -3,6 +3,13 @@
     {{#if desc}}<div class="open__config-desc">{{res desc}}</div>{{/if}}
     <div class="open__config-fields">
         {{#each fields as |field ix|}}
+        {{#ifeq type 'checkbox'}}
+        <div class="open__config-checkbox">
+            <input type="checkbox" class="open__config-field" id="open__config-field-{{id}}" {{#if value}}checked{{/if}} />
+            <label for="open__config-field-{{id}}">{{res title}}</label>
+        </div>
+        {{#if desc}}<div class="open__config-field-desc muted-color">{{res desc}}</div>{{/if}}
+        {{else}}
         <label for="open__config-field-{{id}}">{{res title}}:</label>
         {{#if desc}}<div class="open__config-field-desc muted-color">{{res desc}}</div>{{/if}}
         <input type="{{type}}" class="open__config-field input-base" id="open__config-field-{{id}}"
@@ -11,6 +18,7 @@
             {{#if required}}required{{/if}}
             {{#if pattern}}pattern="{{pattern}}"{{/if}}
         />
+        {{/ifeq}}
         {{/each}}
     </div>
     <div class="open__config-error error-color"></div>

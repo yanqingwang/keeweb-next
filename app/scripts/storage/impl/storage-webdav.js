@@ -36,6 +36,13 @@ class StorageWebDav extends StorageBase {
                     desc: 'openPassDesc',
                     placeholder: 'openPassPlaceholder',
                     type: 'password'
+                },
+                {
+                    id: 'savePassword',
+                    title: 'openSavePassword',
+                    desc: 'openSavePasswordDesc',
+                    type: 'checkbox',
+                    value: true
                 }
             ]
         };
@@ -260,8 +267,9 @@ class StorageWebDav extends StorageBase {
     }
 
     fileOptsToStoreOpts(opts, file) {
-        const result = { user: opts.user, encpass: opts.encpass };
-        if (opts.password) {
+        const savePassword = opts.savePassword !== false;
+        const result = { user: opts.user, savePassword };
+        if (savePassword && opts.password) {
             const fileId = file.uuid;
             const password = opts.password;
             const encpass = this._xorString(password, fileId);
@@ -271,8 +279,9 @@ class StorageWebDav extends StorageBase {
     }
 
     storeOptsToFileOpts(opts, file) {
-        const result = { user: opts.user, password: opts.password };
-        if (opts.encpass) {
+        const savePassword = opts.savePassword !== false;
+        const result = { user: opts.user, password: opts.password, savePassword };
+        if (savePassword && opts.encpass) {
             const fileId = file.uuid;
             const encpass = atob(opts.encpass);
             result.password = this._xorString(encpass, fileId);

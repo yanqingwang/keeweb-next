@@ -12,8 +12,13 @@ const SettingsManager = {
     activeLocale: 'en-US',
     activeTheme: null,
 
+    // bundled with the app: no language plugin is needed for these
     allLocales: {
         'en-US': 'English',
+        'zh-CN': '简体中文',
+        'zh-TW': '繁體中文',
+        'ja': '日本語',
+        'ko': '한국어',
         'de-DE': 'Deutsch',
         'fr-FR': 'Français'
     },

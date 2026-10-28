@@ -907,14 +907,18 @@ class OpenView extends View {
             if (lastFile.uuid && storage.storeOptsToFileOpts) {
                 opts = storage.storeOptsToFileOpts(opts, { uuid: lastFile.uuid });
             }
-            const values = {
-                path: lastFile.path,
-                user: opts.user,
-                password: opts.password
-            };
-            config.fields = config.fields.map((field) =>
-                values[field.id] ? { ...field, value: values[field.id] } : field
-            );
+            config.fields = config.fields.map((field) => {
+                if (field.id === 'path') {
+                    return { ...field, value: lastFile.path };
+                }
+                if (field.id === 'savePassword') {
+                    return { ...field, value: opts.savePassword !== false };
+                }
+                if ((field.id === 'user' || field.id === 'password') && opts[field.id]) {
+                    return { ...field, value: opts[field.id] };
+                }
+                return field;
+            });
         }
         this.views.openConfig = new OpenConfigView(config, {
             parent: '.open__config-wrap'

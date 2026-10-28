@@ -2,6 +2,7 @@ import { Model } from 'framework/model';
 import { RuntimeInfo } from 'const/runtime-info';
 import { SettingsStore } from 'comp/settings/settings-store';
 import { Plugin, PluginStatus } from 'plugins/plugin';
+import { SettingsManager } from 'comp/settings/settings-manager';
 import { PluginCollection } from 'plugins/plugin-collection';
 import { PluginGallery } from 'plugins/plugin-gallery';
 import { SignatureVerifier } from 'util/data/signature-verifier';
@@ -34,8 +35,26 @@ class PluginManager extends Model {
             }
             return PluginGallery.getCachedGallery().then((gallery) => {
                 const promises = state.plugins.map((plugin) => this.loadPlugin(plugin, gallery));
-                return Promise.all(promises).then((loadedPlugins) => {
-                    this.plugins.push(...loadedPlugins.filter((plugin) => plugin));
+                return Promise.all(promises).then(async (loadedPlugins) => {
+                    const bundled = loadedPlugins.filter(
+                        (plugin) =>
+                            plugin &&
+                            plugin.manifest.locale &&
+                            SettingsManager.allLocales[plugin.manifest.locale.name]
+                    );
+                    for (const plugin of bundled) {
+                        // the language ships with the app now; drop the plugin
+                        // so its strings cannot shadow the bundled ones
+                        logger.info('Removing language plugin bundled with the app', plugin.id);
+                        await plugin.uninstall().catch(() => {});
+                    }
+                    const kept = loadedPlugins.filter(
+                        (plugin) => plugin && !bundled.includes(plugin)
+                    );
+                    this.plugins.push(...kept);
+                    if (bundled.length) {
+                        this.saveState();
+                    }
                     logger.info(`Loaded ${this.plugins.length} plugins`, logger.ts(ts));
                 });
             });

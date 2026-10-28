@@ -50,7 +50,7 @@ class OpenConfigView extends View {
         this.model.fields.every(function (field) {
             const input = this.$el.find('#open__config-field-' + field.id)[0];
             if (data && input.checkValidity()) {
-                data[field.id] = input.value;
+                data[field.id] = input.type === 'checkbox' ? input.checked : input.value;
             } else {
                 data = null;
                 return false;

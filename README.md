@@ -113,6 +113,10 @@ flowchart LR
 * 协议对齐 KeePassHTTP v2.3.1.0：支持 `get-logins` / `get-logins-count` /
   `get-all-logins` / `get-logins-by-names` / `set-login`，响应带 HMAC-SHA256，
   `SubmitUrl` 参与匹配。
+* 扩展读取的是**当前解锁会话的实时数据**（遍历分组而非打开时的快照），
+  由扩展保存的登录会标记文件已修改并立即走正常保存/同步流程写入 WebDAV。
+* 其他设备写入的新数据需要应用先完成同步（打开文件、保存或自动保存时触发）；
+  扩展不会在每次查询时强制拉取远端。
 * 需要先解锁数据库；关联关系保存在壳进程内，重启应用后需重新确认一次。
 
 ## 本机 HTTP API（KeePassHTTP 兼容）

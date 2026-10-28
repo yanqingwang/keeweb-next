@@ -785,5 +785,7 @@
   "setBrowserBundledTitle": "Extension shipped with the app",
   "setBrowserBundledBody": "A manifest-v3 extension is installed to /usr/share/keeweb-next/browser-extension. Open chrome://extensions, turn on Developer mode, choose Load unpacked and pick that folder. For Firefox, use manifest.firefox.json from the same folder.",
   "openPinFile": "Pin to top",
-  "openUnpinFile": "Unpin"
+  "openUnpinFile": "Unpin",
+  "openSavePassword": "Remember password",
+  "openSavePasswordDesc": "Saved on this computer, obfuscated with the database id; clear it to type the password on every start."
 }

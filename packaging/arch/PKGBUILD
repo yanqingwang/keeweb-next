@@ -1,7 +1,7 @@
 # Maintainer: yanqingwang
 pkgname=keeweb-next
 pkgver=0.1.0
-pkgrel=5
+pkgrel=6
 pkgdesc='KeeWeb as a web app, with an optional Tauri webview shell (WebDAV without CORS limits)'
 arch=('x86_64' 'aarch64')
 url='https://github.com/yanqingwang/keeweb-next'
@@ -37,6 +37,9 @@ package() {
     # for the browser mode (keeweb-next-browser)
     install -d "$pkgdir/usr/share/keeweb-next"
     cp -a dist "$pkgdir/usr/share/keeweb-next/dist"
+
+    # browser extension speaking the local KeePassHTTP endpoint
+    cp -a browser-extension "$pkgdir/usr/share/keeweb-next/browser-extension"
 
     # plugin gallery for offline installs; the signing key stays in the repo
     install -d "$pkgdir/usr/share/keeweb-next/plugins"

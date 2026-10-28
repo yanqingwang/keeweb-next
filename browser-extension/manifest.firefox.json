@@ -1,0 +1,37 @@
+{
+    "manifest_version": 3,
+    "name": "KeeWeb Next Browser Connect",
+    "version": "1.0.0",
+    "description": "Connects to the KeeWeb Next desktop shell over its local KeePassHTTP endpoint.",
+    "permissions": ["activeTab", "scripting", "storage", "tabs"],
+    "host_permissions": ["http://127.0.0.1:19455/*"],
+    "background": {
+        "scripts": ["background.js"],
+        "type": "module"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "browser-connect@keeweb-next",
+            "strict_min_version": "128.0"
+        }
+    },
+    "action": {
+        "default_title": "KeeWeb Next",
+        "default_popup": "popup.html",
+        "default_icon": {
+            "32": "icons/32.png",
+            "128": "icons/128.png"
+        }
+    },
+    "icons": {
+        "32": "icons/32.png",
+        "128": "icons/128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": ["http://*/*", "https://*/*"],
+            "js": ["content.js"],
+            "run_at": "document_idle"
+        }
+    ]
+}

@@ -10,6 +10,8 @@ import { isTauri } from 'util/tauri';
 import { AppModel } from 'models/app-model';
 import { EntryModel } from 'models/entry-model';
 import { Events } from 'framework/events';
+import { Alerts } from 'comp/ui/alerts';
+import { Locale } from 'util/locale';
 import { Logger } from 'util/logger';
 
 const logger = new Logger('shell-bridge');
@@ -21,12 +23,35 @@ function unlockedFile() {
     if (!appModel) {
         return undefined;
     }
-    for (const file of appModel.files.models) {
+    for (const file of appModel.files) {
         if (file.active && !file.demo && file.backend !== 'otp-device') {
             return file;
         }
     }
     return undefined;
+}
+
+function hostOf(rawUrl) {
+    if (!rawUrl) {
+        return '';
+    }
+    try {
+        const parsed = new URL(/^[a-z][a-z0-9+.-]*:/i.test(rawUrl) ? rawUrl : 'https://' + rawUrl);
+        return parsed.hostname.toLowerCase().replace(/^www\./, '');
+    } catch {
+        return '';
+    }
+}
+
+function hostMatches(entryHost, targetHost) {
+    if (!entryHost) {
+        return false;
+    }
+    return (
+        entryHost === targetHost ||
+        entryHost.endsWith('.' + targetHost) ||
+        targetHost.endsWith('.' + entryHost)
+    );
 }
 
 const handlers = {
@@ -35,20 +60,42 @@ const handlers = {
         return { unlocked: !!unlockedFile() };
     },
 
-    'vault.hash'() {
+    async 'vault.hash'() {
         const file = unlockedFile();
         if (!file) {
             throw new Error('vault locked');
         }
-        return { hash: file.db.header.hash || '' };
+        // KeePassHTTP identifies a database by SHA-1 over the root and
+        // recycle-bin UUIDs, so extensions notice a database switch
+        const root = file.db.getDefaultGroup().uuid.id;
+        const recycle = file.db.meta.recycleBinUuid ? file.db.meta.recycleBinUuid.id : '';
+        const digest = await crypto.subtle.digest(
+            'SHA-1',
+            new TextEncoder().encode(root + recycle)
+        );
+        const hash = Array.from(new Uint8Array(digest))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+        return { hash };
     },
 
-    // search entries by url; returns titles and ids only — the secret fields
-    // travel through a dedicated, explicitly-confirmed read call
+    // the association key arrives over plain HTTP once; showing the
+    // dialog is what turns that into a shared secret
     'vault.confirm-association'() {
-        // the association key arrives over plain HTTP once; showing the
-        // dialog is what turns that into a shared secret
-        return { allowed: true };
+        const file = unlockedFile();
+        if (!file) {
+            return { allowed: false, unlocked: false };
+        }
+        return new Promise((resolve) => {
+            Alerts.yesno({
+                header: Locale.kphAssociationTitle,
+                body: Locale.kphAssociationBody,
+                icon: 'plug',
+                complete: (result) => {
+                    resolve({ allowed: result === 'yes', unlocked: true });
+                }
+            });
+        });
     },
 
     'vault.set-login'({ login, password, url }) {
@@ -71,7 +118,7 @@ const handlers = {
             Password: password,
             URL: url
         });
-        return { allowed: true, uuid: entry.id };
+        return { allowed: true, unlocked: true, uuid: entry.id };
     },
 
     'vault.find-logins'({ url }) {
@@ -82,31 +129,23 @@ const handlers = {
         if (typeof url !== 'string' || !url) {
             throw new Error('bad request');
         }
-        let host;
-        try {
-            host = new URL(url).host;
-        } catch {
+        const target = hostOf(url);
+        if (!target) {
             throw new Error('bad url');
         }
         const matches = [];
         for (const entry of Object.values(file.entryMap)) {
-            const raw = entry.entry; // the kdbxweb entry behind the model
-            const entryUrl = raw.fields.get('URL') || '';
-            const entryTitle = raw.fields.get('Title') || '';
-            const login = raw.fields.get('UserName') || '';
-            if (
-                (entryUrl && entryUrl.includes(host)) ||
-                (entryTitle && entryTitle.includes(host))
-            ) {
-                matches.push({
-                    uuid: entry.id,
-                    title: entryTitle,
-                    login,
-                    url: entryUrl
-                });
+            if (!hostMatches(hostOf(entry.url), target)) {
+                continue;
             }
+            matches.push({
+                uuid: entry.uuid,
+                title: entry.title || '',
+                login: entry.user || '',
+                password: entry.password ? entry.password.getText() : ''
+            });
         }
-        return { entries: matches };
+        return { allowed: true, unlocked: true, entries: matches };
     }
 };
 
@@ -125,7 +164,10 @@ function handle(call) {
     try {
         const result = handler(call.args);
         if (result instanceof Promise) {
-            result.then(reply, (e) => reply({ error: e.message || String(e) }));
+            result.then(
+                (value) => reply({ result: value }),
+                (e) => reply({ error: e.message || String(e) })
+            );
         } else {
             reply({ result });
         }

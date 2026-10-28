@@ -41,7 +41,7 @@ pub fn encrypt(plain: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8> {
         .encrypt_padded_vec::<Pkcs7>(plain)
 }
 
-fn decrypt(cipher_text: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, &'static str> {
+pub fn decrypt(cipher_text: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, &'static str> {
     if cipher_text.is_empty() || !cipher_text.len().is_multiple_of(16) {
         return Err("bad ciphertext length");
     }
@@ -61,7 +61,7 @@ pub struct Request {
     #[serde(default)]
     pub trigger_unlock: bool,
     #[serde(default)]
-    pub sort_selection: Option<String>,
+    pub sort_selection: Option<serde_json::Value>,
     #[serde(default)]
     pub login: Option<String>,
     #[serde(default)]
@@ -254,6 +254,7 @@ fn plain_response(
 ) -> (Response, [u8; 16]) {
     let mut nonce = [0u8; 16];
     getrandom::fill(&mut nonce).expect("OS entropy unavailable");
+    let nonce_b64 = STANDARD.encode(nonce);
     let response = Response {
         request_type: request_type.to_string(),
         error: None,
@@ -263,16 +264,31 @@ fn plain_response(
         version: env!("CARGO_PKG_VERSION"),
         hash: hash.to_string(),
         entries: None,
-        nonce: Some(STANDARD.encode(nonce)),
-        verifier: Some(STANDARD.encode(encrypt(&nonce, &association.key, &nonce))),
+        // clients verify Verifier by decrypting it with IV = Nonce and
+        // comparing the plaintext to the Nonce string, so the plaintext is
+        // the base64 text, not the raw bytes
+        verifier: Some(STANDARD.encode(encrypt(
+            nonce_b64.as_bytes(),
+            &association.key,
+            &nonce,
+        ))),
+        nonce: Some(nonce_b64),
     };
     (response, nonce)
 }
 
 /// Binds 127.0.0.1:PORT and serves requests until the process dies.
 pub fn serve(state: std::sync::Arc<ServerState>, app: tauri::AppHandle) {
-    let listener = std::net::TcpListener::bind(("127.0.0.1", PORT))
-        .expect("the KeePassHTTP port is already in use");
+    let listener = match std::net::TcpListener::bind(("127.0.0.1", PORT)) {
+        Ok(listener) => listener,
+        Err(e) => {
+            eprintln!(
+                "[keepasshttp] port {} is busy ({}); browser integration is off",
+                PORT, e
+            );
+            return;
+        }
+    };
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
         // the API exists for browser extensions on this machine; anything
@@ -339,6 +355,25 @@ fn serve_one(
         buffer.extend_from_slice(&chunk[..read]);
     }
 
+    let method = head
+        .split_whitespace()
+        .next()
+        .unwrap_or_default()
+        .to_string();
+    if method == "OPTIONS" {
+        // browser extensions preflight the JSON POST
+        let http = "HTTP/1.1 204 No Content\r\n\
+                    Access-Control-Allow-Origin: *\r\n\
+                    Access-Control-Allow-Headers: content-type\r\n\
+                    Access-Control-Allow-Methods: POST, OPTIONS\r\n\
+                    Access-Control-Max-Age: 600\r\n\
+                    Content-Length: 0\r\n\
+                    Connection: close\r\n\r\n";
+        stream.write_all(http.as_bytes())?;
+        stream.flush()?;
+        return Ok(());
+    }
+
     let body_start = header_end;
     let body_end = (header_end + content_length).min(buffer.len());
     let request: Request = match serde_json::from_slice(&buffer[body_start..body_end]) {
@@ -349,7 +384,10 @@ fn serve_one(
     let response = handle_request(&state, request);
     let body = serde_json::to_vec(&response).unwrap_or_default();
     let http = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\
+         Access-Control-Allow-Origin: *\r\n\
+         Access-Control-Allow-Headers: content-type\r\n\
+         Content-Length: {}\r\nConnection: close\r\n\r\n",
         body.len()
     );
     stream.write_all(http.as_bytes())?;
@@ -413,23 +451,17 @@ pub fn handle_request(state: &ServerState, request: Request) -> Response {
             // The id is the SHA-1 of the key, the same scheme KeePassHTTP
             // uses: deterministic, unique per key, no server-side state.
             let id = sha1_hex(key_b64);
+            let association = Association {
+                id: id.clone(),
+                key: key_bytes,
+            };
             state
                 .associations
                 .lock()
                 .expect("associations lock")
-                .insert(id.clone(), Association { id: id.clone(), key: key_bytes });
-            Response {
-                request_type: "associate".to_string(),
-                error: None,
-                success: true,
-                id: Some(id),
-                count: 0,
-                version: env!("CARGO_PKG_VERSION"),
-                hash,
-                entries: None,
-                nonce: None,
-                verifier: None,
-            }
+                .insert(id, association.clone());
+            let (response, _) = plain_response("associate", &hash, &association);
+            response
         }
         "get-logins" | "get-logins-count" => {
             let association = match key_for(state, &request.id, &request.verifier, &request.nonce)

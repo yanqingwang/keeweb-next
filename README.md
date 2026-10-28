@@ -92,6 +92,20 @@ flowchart LR
   KeePassHTTP 端点已可用）。
 * 自动更新、托盘、全局快捷键、auto-type：Electron 时代功能，暂未迁移。
 
+## 浏览器集成（KeePassHTTP）
+
+壳启动时会监听 `127.0.0.1:19455` 的 KeePassHTTP 端点，浏览器扩展可以用它填写/保存登录：
+
+* **自带扩展**：`browser-extension/`（Manifest V3，Chrome/Edge/Chromium；Firefox 用
+  同目录的 `manifest.firefox.json` 改名）。打开 `chrome://extensions` → 开发者模式 →
+  「加载已解压的扩展程序」→ 选择该目录（Arch 包内路径
+  `/usr/share/keeweb-next/browser-extension`），点扩展图标 →「Connect to the app」。
+* **第三方扩展**：任何 KeePassHTTP 客户端都可以直连该端点，例如 chromeIPass、
+  KeePassHttp-Connector。
+* **KeePassXC-Browser 不支持**：它只走 KeePassXC 自己的 native messaging 协议，
+  与本端点不兼容。
+* 需要先解锁数据库；关联关系保存在壳进程内，重启应用后需重新确认一次。
+
 ## 本机 HTTP API（KeePassHTTP 兼容）
 
 壳进程监听 `127.0.0.1:19455`，实现 KeePassHTTP 协议（pfn/keepasshttp），

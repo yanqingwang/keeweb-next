@@ -51,9 +51,15 @@ class SettingsBrowserView extends View {
             })
         };
         if (Features.isDesktop) {
+            // the shell speaks KeePassHTTP; the matrix below belongs to the
+            // Electron build that no longer exists
+            data.httpApi = true;
+            data.httpEndpoint = 'http://127.0.0.1:19455';
+            data.kphExtensions = Links.KphExtensions;
+        } else if (BrowserExtensionConnector.isEnabled()) {
             data.extensionNames = ['KeeWeb Connect', 'KeePassXC-Browser'];
             data.settingsPerBrowser = this.getSettingsPerBrowser();
-            data.anyBrowserIsEnabled = BrowserExtensionConnector.isEnabled();
+            data.anyBrowserIsEnabled = true;
         } else {
             const extensionBrowserFamily = Features.extensionBrowserFamily;
             data.extensionBrowserFamily = Features.extensionBrowserFamily;

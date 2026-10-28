@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="popup.css" />
+        <title>KeeWeb Next</title>
+    </head>
+    <body>
+        <header>
+            <img src="icons/32.png" alt="" width="20" height="20" />
+            <span>KeeWeb Next</span>
+        </header>
+        <p id="status" class="muted">Connecting…</p>
+        <div id="connect" class="hidden">
+            <button id="connect-btn">Connect to the app</button>
+            <p class="muted small">
+                The desktop app must be running with an unlocked database. It asks once for
+                permission.
+            </p>
+        </div>
+        <ul id="logins"></ul>
+        <div id="actions" class="hidden">
+            <button id="save-btn" class="secondary">Save this page's login</button>
+            <button id="forget-btn" class="link">Forget this browser</button>
+        </div>
+        <script src="popup.js" type="module"></script>
+    </body>
+</html>

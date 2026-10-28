@@ -26,6 +26,17 @@ const Links = {
     YubiKeyManagerInstall: 'https://github.com/Yubico/yubikey-manager#installation',
     HaveIBeenPwned: 'https://haveibeenpwned.com',
     HaveIBeenPwnedPrivacy: 'https://haveibeenpwned.com/Passwords',
+    KphExtensions: [
+        {
+            name: 'chromeIPass (Chrome, Edge)',
+            url:
+                'https://chromewebstore.google.com/detail/chromeipass/bocdfmfhfcobbagfcbimemeclglilcbk'
+        },
+        {
+            name: 'KeePassHttp-Connector (Firefox)',
+            url: 'https://addons.mozilla.org/firefox/addon/keepasshttp-connector/'
+        }
+    ],
     ExtensionHelpForOtherBrowsers:
         'https://github.com/keeweb/keeweb/wiki/Browser-AutoFill#other-browsers',
     ExtensionHelpForKPXC:

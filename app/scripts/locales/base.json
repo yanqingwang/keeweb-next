@@ -776,5 +776,12 @@
   "setHelpSupportBody": "If this app saves you some time, you can buy me a coffee. Thank you!",
   "setHelpRewardQr": "WeChat reward code",
   "setHelpWechatOfficial": "WeChat official account",
-  "setHelpContact": "Contact"
+  "setHelpContact": "Contact",
+  "kphAssociationTitle": "Browser integration",
+  "kphAssociationBody": "A browser extension wants to connect to this database and read logins for the pages you open. Allow the association?",
+  "setBrowserKphIntro": "This build starts a KeePassHTTP endpoint for browser extensions. It listens on the loopback interface only and answers while the app is running.",
+  "setBrowserKphExtensions": "Extensions speaking this protocol",
+  "setBrowserKphNote": "KeePassXC-Browser is not supported: it talks to KeePassXC through its own native-messaging host. Associations last until the app quits, after which the extension asks to associate again.",
+  "setBrowserBundledTitle": "Extension shipped with the app",
+  "setBrowserBundledBody": "A manifest-v3 extension is installed to /usr/share/keeweb-next/browser-extension. Open chrome://extensions, turn on Developer mode, choose Load unpacked and pick that folder. For Firefox, use manifest.firefox.json from the same folder."
 }

@@ -4,7 +4,14 @@ on:
   push:
     branches: [main, master]
     tags: ['v*']
+    # docs-only commits do not need a full shell matrix
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
 
 # a new push supersedes a running build for the same ref instead of queueing

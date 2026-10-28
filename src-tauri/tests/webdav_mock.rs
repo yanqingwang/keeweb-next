@@ -112,3 +112,29 @@ async fn a_get_returns_the_body_and_headers() {
     let raw = handle.join().expect("join");
     assert!(raw.starts_with("GET /"), "unexpected request: {}", raw);
 }
+
+#[tokio::test]
+async fn a_missing_last_modified_stays_missing() {
+    // Nutstore answers HEAD without Last-Modified; the proxy must pass the
+    // header set through unchanged so the web layer can decide what to do.
+    let (url, handle) = serve("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
+
+    let response = perform(WebDavRequest {
+        method: "HEAD".to_string(),
+        url,
+        headers: Default::default(),
+        body: None,
+    })
+    .await
+    .expect("head");
+
+    assert_eq!(response.status, 200);
+    assert!(
+        !response.headers.contains_key("last-modified"),
+        "unexpected last-modified in {:?}",
+        response.headers
+    );
+
+    let raw = handle.join().expect("join");
+    assert!(raw.starts_with("HEAD /"), "unexpected request: {}", raw);
+}

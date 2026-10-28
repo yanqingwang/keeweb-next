@@ -38,8 +38,9 @@ const toBytes = (data) => {
     return new Uint8Array(data);
 };
 
-// filled on startup so the synchronous getDocumentsPath() callers have a value
+// filled on startup so the synchronous path callers have a value
 let documentsDir = '';
+let dataDir = '';
 
 const Launcher = {
     name: 'webview-shell',
@@ -159,7 +160,7 @@ const Launcher = {
             .then((path) => path && callback(path))
             .catch(noop);
     },
-    getUserDataPath: () => '',
+    getUserDataPath: (name) => [dataDir, name].filter(Boolean).join('/').replace(/\/+/g, '/'),
     getTempPath: () => '',
     joinPath: (a, b) => [a, b].filter(Boolean).join('/').replace(/\/+/g, '/'),
     parsePath: (p) => ({
@@ -219,6 +220,12 @@ const Launcher = {
 invoke('documents_dir')
     .then((dir) => {
         documentsDir = dir || '';
+    })
+    .catch(noop);
+
+invoke('data_dir')
+    .then((dir) => {
+        dataDir = dir || '';
     })
     .catch(noop);
 

@@ -42,3 +42,6 @@ $fa-font-path: '~font-awesome/fonts';
 @import 'areas/settings';
 @import 'areas/import-csv';
 @import 'areas/titlebar';
+
+// Visual refresh, imported last so it wins ties
+@import 'base/redesign';

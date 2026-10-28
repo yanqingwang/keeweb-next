@@ -79,7 +79,10 @@ flowchart LR
   壳内未实现，入口已关闭（`Launcher.devicesSupported = false`）。
 * About 页改为本分支信息：KeeWeb Next 版本、维护者 Rossw、基于 KeeWeb 1.18.9
   （Antelle，MIT）。
-* Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制）。
+* 插件仓库：`plugins/` 内置 5 个 KeeWeb 插件（快捷搜索、复制热键、打开 URL、
+  密码年龄标记、重复项检查），画廊 `plugins.json` 已签名并指向本仓库
+  （`Links.Plugins`），签名方式见 `plugins/README.md`。
+* Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制 + `plugins/` 离线副本）。
 
 ## 尚未完成 / 路线图
 

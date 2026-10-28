@@ -1,0 +1,21 @@
+.copy-hotkeys-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 48px;
+    z-index: 1000;
+    transform: translateX(-50%) translateY(8px);
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(20, 22, 26, 0.92);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.copy-hotkeys-toast--visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}

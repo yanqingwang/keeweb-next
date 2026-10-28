@@ -1,0 +1,18 @@
+{
+    "version": "1.0.0",
+    "manifestVersion": "0.1.0",
+    "name": "password-age",
+    "description": "Marks entries whose password was last changed more than a year (or two) ago",
+    "author": {
+        "name": "Rossw",
+        "email": "wangyantsing@qq.com",
+        "url": "https://github.com/yanqingwang"
+    },
+    "resources": {
+        "js": "wHKo9KcUUvd8aFK2zbqLBqV91AUuITTNJwcrpCO3xJva0TIc0VcUpa0ZKs2tBpexKuJbDbdVIR72sAMs+gJA37T7E6dmdPvRfqG+GEi/wyxCIJ2VAeKHA4ZY7Cv+BgCFnXY5QR3DWJYUOBLwSd8JecfnzD5lfJoBtkgpdMoY+zz/BZ1/NXCPSvNpgyq9oeHbUpn+PBdztN8b3P1lFIOci/I6+fJSPfqODBNaPhmTrtc45FglzaOkLam3vHUTZ8RgtgmMNEeQjo2O/fcMLySZCmpCXs9mZX+/8jQTHPILVYK5vmWZZuFMyx3RReJJR6spTkKuZ/HsoHhrMXktDseOzQ==",
+        "css": "DjYN9C5zbluzoB76QdBBAKqIh3TiWj0hs/oBItgl49Avp7MroEpGyur1039tghI58q2sNuEPUgnz9pMFQGivfeWwf1KKpvUaziKIbKW7fkZilVLlaF1KcrqdVaDelaxxVbxuU8CHYYYHG+4zM1diXVIMcCQMvUXD5hmG/P3JfgWasJ3Z7JNOPFeYkeL6R37GYVX+to5NGs5obTiYOrgOS1k1CesjBJ5KBfQLPkTH/B2oPVOvXGVyPI8lV+05AL+yLCDE3P2s8E/UUKnLrWpXE9cw7LJKBBAs/qmaOQzVvgiMN+IJAsZiEpj0nJHX35/ygoaWeh/rG4jkx+vpva/S5g=="
+    },
+    "license": "MIT",
+    "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/password-age",
+    "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuNEOan+NnJTwrdwgztnLMefHe9EprQN7VeZiEwDwY2ykpUDV59jxsfSEXLXrt7YaEy4LSC/z0UDrTfrkH08mEexWFmsUtwb+W5dO3Xhg/derKZHvy4hznPhVgdOzbwWR1kmXo2feZPwoa/UgIqiK7Qd3nG6Xg9VNdPEfRcakwrXR0U5uE6FHUm9aYOFj3xHOQ88E2ZqIsQrer4uncj4kM/EfdjFzpOh5AubwoPMzlMjAJb7qGauBYIX6gWHbqaEwrwkNRw6NMhxhCtQh9pnEUI6AbWsUwQh8w19lkgUsZJKBMzyNDNMuliCxmDW9ktJ7qgUQvIGXFhXiTqWuprcjQIDAQAB"
+}

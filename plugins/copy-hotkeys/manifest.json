@@ -1,0 +1,18 @@
+{
+    "version": "1.0.0",
+    "manifestVersion": "0.1.0",
+    "name": "copy-hotkeys",
+    "description": "Alt+1..4 copy the selected entry's user, password, URL and title; Alt+Shift+U opens the URL",
+    "author": {
+        "name": "Rossw",
+        "email": "wangyantsing@qq.com",
+        "url": "https://github.com/yanqingwang"
+    },
+    "resources": {
+        "js": "uJiYpZn/RjT+JH/mO3fdNrDzA1q0QTk4czQaHBDqgP1dUScinC2FXHLCcOwP23wRl4qdUVJ/lkJgbswnlUnmOnKfS1NiM4pGT0K+wFGaRhGMxKrwhbPL+oJYQXLov5z0SAByib3ZF0B07G6BDwa+Q5ITwA6RFZdeGy2pOuehYb5VOsFM7hS8zo2pnpwA7U7LWuExrtyIHb4GdPKnsakq2ASVZTbf1v7DHBBY8TRhdat+M6hAcufhMziMk9YGrKRejkM/+xiDHQfkQ7n5em1cqBDTdssuB43gwirBv6dbZnpyooy34cIVc1jN7zoPgeIwCLES7QxFm7ULG17uYQPehw==",
+        "css": "QwCyTyTLMFMzrZToWqdkmQFeK6PMIgG/KAKCbvgFbVahbQY/fJpPGiXdv9z19A1psQzv/ArvsKhm2ZbQrHtEkUt7BkOHmguTzK/x8qddih3oIN1MENrgEGSx9LPfApV6yrYC1rZlN7FpER28WzO92/w+V5tK9o+TqWVBT1oEkImLhZVXGsW6YmNLXp7gRGhtC2WWMCeQYNWbEh2OIkcBugxHtio3r87eQG2hFJLkbh+RvDPmq2Chgl4ZHd+GAxjksCHhcoG703Q/ug/vt06LIkCvslgSLsJToDPjqzXpsFyAkWFksu2ZJppMw6jtU8jGi5OHQHlUSvo6aKFCFYzFgw=="
+    },
+    "license": "MIT",
+    "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/copy-hotkeys",
+    "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuNEOan+NnJTwrdwgztnLMefHe9EprQN7VeZiEwDwY2ykpUDV59jxsfSEXLXrt7YaEy4LSC/z0UDrTfrkH08mEexWFmsUtwb+W5dO3Xhg/derKZHvy4hznPhVgdOzbwWR1kmXo2feZPwoa/UgIqiK7Qd3nG6Xg9VNdPEfRcakwrXR0U5uE6FHUm9aYOFj3xHOQ88E2ZqIsQrer4uncj4kM/EfdjFzpOh5AubwoPMzlMjAJb7qGauBYIX6gWHbqaEwrwkNRw6NMhxhCtQh9pnEUI6AbWsUwQh8w19lkgUsZJKBMzyNDNMuliCxmDW9ktJ7qgUQvIGXFhXiTqWuprcjQIDAQAB"
+}

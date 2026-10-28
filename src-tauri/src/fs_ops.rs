@@ -127,6 +127,15 @@ pub async fn save_dialog(app: tauri::AppHandle, default_name: String) -> Option<
 }
 
 #[tauri::command]
+pub fn data_dir(app: tauri::AppHandle) -> String {
+    use tauri::Manager;
+    app.path()
+        .app_data_dir()
+        .map(|dir| dir.to_string_lossy().to_string())
+        .unwrap_or_default()
+}
+
+#[tauri::command]
 pub fn documents_dir(app: tauri::AppHandle) -> String {
     use tauri::Manager;
     app.path()

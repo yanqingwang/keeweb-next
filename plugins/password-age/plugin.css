@@ -1,0 +1,18 @@
+.list__item[data-pw-age] {
+    position: relative;
+}
+
+.list__item[data-pw-age]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--warning, #c98a2d);
+}
+
+.list__item[data-pw-age='critical']::before {
+    background: var(--error, #d9534f);
+}

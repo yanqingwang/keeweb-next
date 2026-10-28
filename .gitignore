@@ -50,6 +50,7 @@ $RECYCLE.BIN/
 tmp/
 *.user
 bin/
+!src-tauri/src/bin/
 *.suo
 dist
 .opt-*

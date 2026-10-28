@@ -13,7 +13,7 @@
     "security": {
       "csp": null
     },
-    "enable-gtk-app-id": true
+    "enableGTKAppId": true
   },
   "bundle": {
     "active": true,

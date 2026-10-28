@@ -38,7 +38,7 @@ flowchart LR
     end
     subgraph rust["Rust 壳进程 (src-tauri/)"]
         WD["webdav_request<br/>(reqwest, GET/PUT/MOVE/...)"]
-        HTTP["本机 HTTP API<br/>(127.0.0.1, 计划中)"]
+        HTTP["KeePassHTTP API<br/>(127.0.0.1:19455)"]
     end
     UI -- "invoke('webdav_request')" --> WD
     WD -- "https" --> DAV["WebDAV 服务<br/>dav.jianguoyun.com 等"]
@@ -50,7 +50,7 @@ flowchart LR
 * **WebView 模式（默认桌面形态）**：Tauri 2 加载同一份 `dist/`（`tauri://localhost`
   安全上下文，WebCrypto 可用），WebDAV 走 Rust `reqwest`，无 CORS 限制、无 Node、
   无 Chromium 捆绑。
-* **本机 HTTP API（进行中）**：壳进程在 `127.0.0.1` 起 KeePassHTTP 兼容端点，
+* **本机 HTTP API**：壳进程在 `127.0.0.1:19455` 起 KeePassHTTP 兼容端点，
   浏览器插件/KeePass 插件直接对话；密钥配对沿用 KeePassHTTP 的
   test-associate / associate / get-logins / set-login 流程（AES-256-CBC）。
 
@@ -174,5 +174,5 @@ makepkg -si          # 装入 /usr/bin/keeweb-next 与 /usr/share/keeweb-next/di
 
 * 数据库在本地解密；WebDAV 只传密文。主密码/密钥文件不落盘。
 * 壳的 `webdav_request` 只允许 WebDAV 需要的方法与 http/https，不充当通用代理。
-* 未来 HTTP API 只绑 `127.0.0.1`，沿用 KeePassHTTP 的配对加密，首次连接需人工确认。
+* HTTP API 只绑 `127.0.0.1`，沿用 KeePassHTTP 的配对加密，首次连接需人工确认。
 * MIT，与上游一致；上游文档见 [docs/README.upstream.md](docs/README.upstream.md)。

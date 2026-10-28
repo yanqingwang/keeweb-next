@@ -100,9 +100,12 @@ jobs:
     needs: [web, shell]
     # tags only: publish the available artifacts even when the optional macOS
     # runner is unavailable; web/Linux/Windows downloads remain useful.
+    # do not gate on the shell matrix: a queued macOS runner cancels its leg
+    # and GitHub marks the whole matrix cancelled; the release should still
+    # carry the web, Linux and Windows downloads that did build
     if: >-
       always() && startsWith(github.ref, 'refs/tags/v') &&
-      needs.web.result == 'success' && needs.shell.result != 'failure'
+      needs.web.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write

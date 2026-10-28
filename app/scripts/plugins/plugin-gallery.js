@@ -19,21 +19,27 @@ const PluginGallery = {
         this.loading = true;
         this.loadError = false;
         const ts = this.logger.ts();
-        return new Promise((resolve) => {
-            this.logger.debug('Loading plugins...');
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', Links.Plugins + '/plugins.json');
-            xhr.responseType = 'json';
-            xhr.send();
-            xhr.addEventListener('load', () => {
-                const data = xhr.response;
-                resolve(data);
+        const loadJson = (base) =>
+            new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', base + '/plugins.json');
+                xhr.responseType = 'json';
+                xhr.send();
+                xhr.addEventListener('load', () => {
+                    resolve(xhr.status === 200 ? xhr.response : null);
+                });
+                xhr.addEventListener('error', () => resolve(null));
             });
-            xhr.addEventListener('error', () => {
-                this.logger.error('Network error loading plugins');
-                resolve();
-            });
-        })
+
+        this.logger.debug('Loading plugins...');
+        return loadJson(Links.Plugins)
+            .then((data) => data || loadJson(Links.PluginsFallback))
+            .then((data) => {
+                if (!data) {
+                    this.logger.error('Network error loading plugins');
+                }
+                return data;
+            })
             .then((data) => {
                 this.loading = false;
                 if (!data) {

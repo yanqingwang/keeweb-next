@@ -199,15 +199,23 @@ class Plugin extends Model {
 
     loadResource(type, local, manifest) {
         const ts = this.logger.ts();
+        const download = () => {
+            const url = this.url + this.getResourcePath(type) + '?v=' + manifest.version;
+            return httpGet(url, true);
+        };
         let res;
         if (local) {
             res = new Promise((resolve, reject) => {
                 const storageKey = this.getStorageResourcePath(type);
                 io.load(storageKey, (err, data) => (err ? reject(err) : resolve(data)));
+            }).catch(() => {
+                // the cache can be gone after an upgrade or a moved data
+                // directory; the plugin is still installed, so fetch it again
+                this.logger.info('Cached resource missing, downloading it again', type);
+                return download();
             });
         } else {
-            const url = this.url + this.getResourcePath(type) + '?v=' + manifest.version;
-            res = httpGet(url, true);
+            res = download();
         }
         return res.then((data) => {
             this.logger.debug('Resource data loaded', type, this.logger.ts(ts));

@@ -16,8 +16,11 @@ const Links = {
     AutoTypeMacOS: 'https://github.com/keeweb/keeweb/wiki/Auto-Type#macos',
     Translation: 'https://keeweb.oneskyapp.com/',
     Donation: 'https://opencollective.com/keeweb#support',
-    // this fork ships its own signed plugin gallery under plugins/
-    Plugins: 'https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins',
+    // this fork ships its own signed plugin gallery under plugins/; jsDelivr
+    // mirrors the repository and is reachable where raw.githubusercontent is
+    // not, raw stays as the fallback
+    Plugins: 'https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins',
+    PluginsFallback: 'https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins',
     PluginDevelopStart: 'https://github.com/keeweb/keeweb/wiki/Plugins',
     YubiKeyManual: 'https://github.com/keeweb/keeweb/wiki/YubiKey',
     YubiKeyManagerInstall: 'https://github.com/Yubico/yubikey-manager#installation',

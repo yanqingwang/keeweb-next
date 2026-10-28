@@ -27,7 +27,7 @@ if (appPublicKey !== publicKey) {
     throw new Error('app/resources/public-key-new.pem does not match signing/public-key.pem');
 }
 
-const galleryBase = 'https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins';
+const galleryBase = 'https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins';
 
 function sign(data) {
     return crypto.sign('sha256', data, privateKey).toString('base64');

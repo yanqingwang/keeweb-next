@@ -1,9 +1,9 @@
 {
-  "date": "2026-10-28T06:17:53.430Z",
-  "signature": "r7EjcmW9Bv31D3tjWb5ikvf9/8jnTMpUB6FgKUdBLU9bYQVZPCRaj1sOuIBGxb5Ao6MPFT/TXoq65+Qaa8flSz2vuF9SUx1xLh5upcw/UdzfLltw4SSknCovXbQ/PYpbdkWvNb4HIpy49MBwQZOQs78K3Xv/Q/HXjzVrVs90Aa1wLP2A8a9HKAx3rH3TmAqXlPoT6nza4fEtmCZualtXDkD6lFcfJAquf49rrksBcAHIqGXibUcxaOIXKHUMO7iNY2MEGJwEfy3KskMtNI/u0oyWYCMxnLD4/forCgZe4ZlYR7VZze4umOgPSD+xehI+Xuzc7m9Ox8KLsKzVGcui4w==",
+  "date": "2026-10-28T08:29:01.812Z",
+  "signature": "wiBB1wj1A+r/k+HciCgy7ffC3lxJcjrhsFtBnTOoyYgPnr7p9g8UIB3X96xYvcpetgbxY/kRqxPWgUUvuCO/5igWSDx3AcmLncMp0ZLivfvvzLQHEfZLzoHCZvCaLbVb5H9euwXbXn1r+5TRsD2av3Os1JtmmoeX6wgUAF7jeU6Gd1OxnQcILA4eJoAAZhL/iuvm4YUBQh9nBH3p8FTaFDQxfCDV6URzQTovp3CkgVo++u9ibnCUVi4Y6CUp2/ovhI7igKLlCP00xhTRYJRk1TF7Hvjdo4LL0pWI8hrcVlpQHJRPgRJx4Mj2U4xCu7V8P1NhApFguM8WVf+2uY5cdQ==",
   "plugins": [
     {
-      "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/copy-hotkeys",
+      "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/copy-hotkeys",
       "official": true,
       "manifest": {
         "version": "1.0.0",
@@ -20,12 +20,12 @@
           "css": "QwCyTyTLMFMzrZToWqdkmQFeK6PMIgG/KAKCbvgFbVahbQY/fJpPGiXdv9z19A1psQzv/ArvsKhm2ZbQrHtEkUt7BkOHmguTzK/x8qddih3oIN1MENrgEGSx9LPfApV6yrYC1rZlN7FpER28WzO92/w+V5tK9o+TqWVBT1oEkImLhZVXGsW6YmNLXp7gRGhtC2WWMCeQYNWbEh2OIkcBugxHtio3r87eQG2hFJLkbh+RvDPmq2Chgl4ZHd+GAxjksCHhcoG703Q/ug/vt06LIkCvslgSLsJToDPjqzXpsFyAkWFksu2ZJppMw6jtU8jGi5OHQHlUSvo6aKFCFYzFgw=="
         },
         "license": "MIT",
-        "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/copy-hotkeys",
+        "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/copy-hotkeys",
         "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuNEOan+NnJTwrdwgztnLMefHe9EprQN7VeZiEwDwY2ykpUDV59jxsfSEXLXrt7YaEy4LSC/z0UDrTfrkH08mEexWFmsUtwb+W5dO3Xhg/derKZHvy4hznPhVgdOzbwWR1kmXo2feZPwoa/UgIqiK7Qd3nG6Xg9VNdPEfRcakwrXR0U5uE6FHUm9aYOFj3xHOQ88E2ZqIsQrer4uncj4kM/EfdjFzpOh5AubwoPMzlMjAJb7qGauBYIX6gWHbqaEwrwkNRw6NMhxhCtQh9pnEUI6AbWsUwQh8w19lkgUsZJKBMzyNDNMuliCxmDW9ktJ7qgUQvIGXFhXiTqWuprcjQIDAQAB"
       }
     },
     {
-      "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/duplicate-finder",
+      "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/duplicate-finder",
       "official": true,
       "manifest": {
         "version": "1.0.0",
@@ -41,12 +41,12 @@
           "js": "LnViPYiVLP2SNjEeczjzm7euDGcSOgHkzPgGrWfJknP0TQ/bRORjqJnVib9QJV/AGeOW3KDB6BTNKMhTZ5KN/iMnnnMbEHoxhxtJ57b+9+aOQBCyXr80+cmSEDAXK5HeVXAHdczeLn6oef5sJQ5u+0MHahrcy6hQ+BA/RrO/ud6l3bWML4Qdp3kRzajAMVX2EuYhvYnu/7pHBFh5pDOJQCLFW/nrYSxu1tbaPSP5hsjyr7n9ZkvA4tla/pLUl/iVtffCt/PAhv6aZNZEDlHtsUocJgh+k91kbEX0tIb6RdIQvdR+hfEOzFJgmaTk9MfSQhR6A/cJpKw/ikH4nTzuSg=="
         },
         "license": "MIT",
-        "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/duplicate-finder",
+        "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/duplicate-finder",
         "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuNEOan+NnJTwrdwgztnLMefHe9EprQN7VeZiEwDwY2ykpUDV59jxsfSEXLXrt7YaEy4LSC/z0UDrTfrkH08mEexWFmsUtwb+W5dO3Xhg/derKZHvy4hznPhVgdOzbwWR1kmXo2feZPwoa/UgIqiK7Qd3nG6Xg9VNdPEfRcakwrXR0U5uE6FHUm9aYOFj3xHOQ88E2ZqIsQrer4uncj4kM/EfdjFzpOh5AubwoPMzlMjAJb7qGauBYIX6gWHbqaEwrwkNRw6NMhxhCtQh9pnEUI6AbWsUwQh8w19lkgUsZJKBMzyNDNMuliCxmDW9ktJ7qgUQvIGXFhXiTqWuprcjQIDAQAB"
       }
     },
     {
-      "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/open-url",
+      "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/open-url",
       "official": true,
       "manifest": {
         "version": "1.0.0",
@@ -62,12 +62,12 @@
           "js": "m+WRXP6/CPEvhM+IrfCvbh9Qcr/A/Sfgq3HcNqyH52Yg+HnXK5FIXRShtl3A54dJU6SxlJOeRttxYK26zPeb2sEVvMzLXJoTCC1cub9BHq8DOyN+V8T1q7z06gPG/yabA6+cnIAjxlvSNXkNZuSNF0++H4mjivcxHyMsyNIC3PUK9XL8nmFswZYz8h3mNjTYZOLjoCpy/H0w+Cv6qguVYLGAAh2uISOfI8tSHi8ZrodJGZA+kSJazdkNtgF47dVftPezAm/DUtyJH9XjPgNMW9rc9brsM33wOHuwf9VOvcWz9AX7azmkiRSrrNq9Scswumk8vWXV6nEQh1L0ocCl5A=="
         },
         "license": "MIT",
-        "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/open-url",
+        "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/open-url",
         "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuNEOan+NnJTwrdwgztnLMefHe9EprQN7VeZiEwDwY2ykpUDV59jxsfSEXLXrt7YaEy4LSC/z0UDrTfrkH08mEexWFmsUtwb+W5dO3Xhg/derKZHvy4hznPhVgdOzbwWR1kmXo2feZPwoa/UgIqiK7Qd3nG6Xg9VNdPEfRcakwrXR0U5uE6FHUm9aYOFj3xHOQ88E2ZqIsQrer4uncj4kM/EfdjFzpOh5AubwoPMzlMjAJb7qGauBYIX6gWHbqaEwrwkNRw6NMhxhCtQh9pnEUI6AbWsUwQh8w19lkgUsZJKBMzyNDNMuliCxmDW9ktJ7qgUQvIGXFhXiTqWuprcjQIDAQAB"
       }
     },
     {
-      "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/password-age",
+      "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/password-age",
       "official": true,
       "manifest": {
         "version": "1.0.0",
@@ -84,12 +84,12 @@
           "css": "DjYN9C5zbluzoB76QdBBAKqIh3TiWj0hs/oBItgl49Avp7MroEpGyur1039tghI58q2sNuEPUgnz9pMFQGivfeWwf1KKpvUaziKIbKW7fkZilVLlaF1KcrqdVaDelaxxVbxuU8CHYYYHG+4zM1diXVIMcCQMvUXD5hmG/P3JfgWasJ3Z7JNOPFeYkeL6R37GYVX+to5NGs5obTiYOrgOS1k1CesjBJ5KBfQLPkTH/B2oPVOvXGVyPI8lV+05AL+yLCDE3P2s8E/UUKnLrWpXE9cw7LJKBBAs/qmaOQzVvgiMN+IJAsZiEpj0nJHX35/ygoaWeh/rG4jkx+vpva/S5g=="
         },
         "license": "MIT",
-        "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/password-age",
+        "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/password-age",
         "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuNEOan+NnJTwrdwgztnLMefHe9EprQN7VeZiEwDwY2ykpUDV59jxsfSEXLXrt7YaEy4LSC/z0UDrTfrkH08mEexWFmsUtwb+W5dO3Xhg/derKZHvy4hznPhVgdOzbwWR1kmXo2feZPwoa/UgIqiK7Qd3nG6Xg9VNdPEfRcakwrXR0U5uE6FHUm9aYOFj3xHOQ88E2ZqIsQrer4uncj4kM/EfdjFzpOh5AubwoPMzlMjAJb7qGauBYIX6gWHbqaEwrwkNRw6NMhxhCtQh9pnEUI6AbWsUwQh8w19lkgUsZJKBMzyNDNMuliCxmDW9ktJ7qgUQvIGXFhXiTqWuprcjQIDAQAB"
       }
     },
     {
-      "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/quick-search",
+      "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/quick-search",
       "official": true,
       "manifest": {
         "version": "1.0.0",
@@ -105,7 +105,7 @@
           "js": "snOV0lAty2x/4WMVtHJL32EaWq8CKVD8eVkg1lsXFUjeT3MWOsXLH8xMOTMqNIOp7SIUu7OJOI91p9QqsGOpekGfZvPP9BNxPakZDZ3JMhOxHVNG/rWUfoinbxyIXOkzqGRTxCV5cPArtzB76gVyY3Cwoi3E6dl62AvxuFueMalB6Wl6BmVNhGYenBwGS5nv00eNLR63wUqeQSWDIEZkxULNhDApZ7ugPpMLGUIaJ9yVt6BUv3rZP7GHTWklceh8M6X6fj3l7shbupHdjk+fGYD41dufyuNCjtCIqBi5pq0TutXwkBZw0n3X+62BojYe8n0XUCLGsioN455ikbNSSg=="
         },
         "license": "MIT",
-        "url": "https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/quick-search",
+        "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/quick-search",
         "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxuNEOan+NnJTwrdwgztnLMefHe9EprQN7VeZiEwDwY2ykpUDV59jxsfSEXLXrt7YaEy4LSC/z0UDrTfrkH08mEexWFmsUtwb+W5dO3Xhg/derKZHvy4hznPhVgdOzbwWR1kmXo2feZPwoa/UgIqiK7Qd3nG6Xg9VNdPEfRcakwrXR0U5uE6FHUm9aYOFj3xHOQ88E2ZqIsQrer4uncj4kM/EfdjFzpOh5AubwoPMzlMjAJb7qGauBYIX6gWHbqaEwrwkNRw6NMhxhCtQh9pnEUI6AbWsUwQh8w19lkgUsZJKBMzyNDNMuliCxmDW9ktJ7qgUQvIGXFhXiTqWuprcjQIDAQAB"
       }
     }

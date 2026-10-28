@@ -4,7 +4,8 @@ Plugins for the web app and the webview shell. The gallery in **Settings → Plu
 loads `plugins.json` from this directory, so pointing `Links.Plugins` at this folder is
 all the app needs.
 
-Gallery URL: `https://raw.githubusercontent.com/yanqingwang/keeweb-next/master/plugins/plugins.json`
+Gallery URL: `https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/plugins.json`
+(raw.githubusercontent.com stays as a fallback in the app)
 
 ## Included plugins
 

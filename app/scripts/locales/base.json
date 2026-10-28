@@ -691,11 +691,6 @@
   "setHelpOpenIssue": "open an issue on GitHub",
   "setHelpContactLink": "contact the developer directly",
   "setHelpAppInfo": "App information",
-  "setHelpOtherPlatforms": "Other platforms",
-  "setHelpDesktopApps": "Desktop apps",
-  "setHelpWebApp": "Web app",
-  "setHelpUpdates": "Updates",
-  "setHelpTwitter": "App twitter",
   "dropboxSetupDesc": "Some configuration is required to use Dropbox in a self-hosted app. Please create your own Dropbox app and fill in its key below.",
   "dropboxAppKey": "Dropbox app key",
   "dropboxAppKeyDesc": "Copy the key from your Dropbox app (Developer settings)",
@@ -715,7 +710,6 @@
   "webdavSaveMethod": "Save method",
   "webdavSaveMove": "Upload a temporary file and move",
   "webdavSavePut": "Overwrite the kdbx file with PUT",
-  "webdavNoLastModified": "Last-Modified HTTP header is absent",
   "webdavStatReload": "Always reload the file instead of relying on Last-Modified HTTP header",
   "launcherSave": "Save Passwords Database",
   "launcherFileFilter": "KeePass files",
@@ -777,5 +771,10 @@
   "selectEntryFieldTouch": "Press the button on your device to generate a one-time code.",
   "setAboutFork1": "This app is a fork of",
   "setAboutFork2": "maintained by",
-  "setAboutFork3": "The web app is KeeWeb; the desktop shell is Tauri 2 instead of Electron, which also lets WebDAV databases load without the browser CORS limits."
+  "setAboutFork3": "The web app is KeeWeb; the desktop shell is Tauri 2 instead of Electron, which also lets WebDAV databases load without the browser CORS limits.",
+  "setHelpSupport": "Support this project",
+  "setHelpSupportBody": "If this app saves you some time, you can buy me a coffee. Thank you!",
+  "setHelpRewardQr": "WeChat reward code",
+  "setHelpWechatOfficial": "WeChat official account",
+  "setHelpContact": "Contact"
 }

@@ -9,7 +9,7 @@ class SettingsHelpView extends View {
 
     render() {
         const appInfo =
-            'KeeWeb v' +
+            'KeeWeb Next v' +
             RuntimeInfo.version +
             ' (' +
             RuntimeInfo.commit +
@@ -27,8 +27,6 @@ class SettingsHelpView extends View {
                 Links.Repo +
                 '/issues/new?body=' +
                 encodeURIComponent('# please describe your issue here\n\n' + appInfo),
-            desktopLink: Links.Desktop,
-            webAppLink: Links.WebApp,
             appInfo
         });
     }

@@ -172,6 +172,18 @@ makepkg -si          # 装入 /usr/bin/keeweb-next 与 /usr/share/keeweb-next/di
 * 父目录需已存在；文件不存在时首次打开会创建。
 * 免费账户 30 分钟内 600 次 WebDAV 请求；打开 1 次 GET、保存 1 次 PUT，日常足够。
 * 上游已知 quirks：411（要求 Content-Length，壳内 PUT 已满足）、503（超限）。
+* 服务器不返回 `Last-Modified` 时也能正常打开：此时不做基于版本的冲突检测，
+  需要的话可在文件设置里启用「总是重新加载文件」。
+
+## 支持与联系
+
+如果这个项目帮你省了一点时间，欢迎请我喝一杯咖啡；也欢迎关注公众号获取更新。
+
+| 微信收款码 | 微信公众号 |
+| --- | --- |
+| <img src="app/content/img/reward-qr.jpg" width="180" alt="微信收款码"> | <img src="app/content/img/wechat-official.jpg" width="180" alt="微信公众号"> |
+
+邮件：<wangyantsing@qq.com>
 
 ## 数据与安全
 

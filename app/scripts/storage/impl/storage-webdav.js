@@ -1,6 +1,5 @@
 import * as kdbxweb from 'kdbxweb';
 import { StorageBase } from 'storage/storage-base';
-import { Locale } from 'util/locale';
 import { isTauri, invoke } from 'util/tauri';
 
 class StorageWebDav extends StorageBase {
@@ -156,7 +155,7 @@ class StorageWebDav extends StorageBase {
                     this.logger.debug('Save: not found, creating');
                     useTmpPath = false;
                 }
-            } else if (stat.rev !== rev) {
+            } else if (rev && stat.rev && stat.rev !== rev) {
                 this.logger.debug('Save error', path, 'rev conflict', stat.rev, rev);
                 return cb({ revConflict: true }, xhr, stat);
             }
@@ -184,7 +183,7 @@ class StorageWebDav extends StorageBase {
                                 });
                                 return cb(err, xhr, stat);
                             }
-                            if (stat.rev !== rev) {
+                            if (rev && stat.rev && stat.rev !== rev) {
                                 this.logger.debug(
                                     'Save error',
                                     path,
@@ -364,24 +363,22 @@ class StorageWebDav extends StorageBase {
 
                 const rev = xhr.getResponseHeader('Last-Modified');
                 if (!rev && !config.nostat) {
+                    // Nutstore and a few other WebDAV servers omit the header;
+                    // the request succeeded, there is just no revision to
+                    // compare later, so carry on without one instead of
+                    // failing the open.
                     this.logger.debug(
-                        config.op + ' error',
+                        'No Last-Modified header, continuing without rev',
                         config.path,
-                        'no headers',
                         this.logger.ts(ts)
                     );
-                    if (callback) {
-                        callback(Locale.webdavNoLastModified, xhr);
-                        callback = null;
-                    }
-                    return;
                 }
 
                 const completedOpName =
                     config.op + (config.op.charAt(config.op.length - 1) === 'e' ? 'd' : 'ed');
                 this.logger.debug(completedOpName, config.path, rev, this.logger.ts(ts));
                 if (callback) {
-                    callback(null, xhr, rev ? { rev } : null);
+                    callback(null, xhr, rev ? { rev } : config.nostat ? null : { rev: null });
                     callback = null;
                 }
             })
@@ -433,23 +430,18 @@ class StorageWebDav extends StorageBase {
             }
             const rev = xhr.getResponseHeader('Last-Modified');
             if (!rev && !config.nostat) {
+                // see _requestShell: a missing header is not an error
                 this.logger.debug(
-                    config.op + ' error',
+                    'No Last-Modified header, continuing without rev',
                     config.path,
-                    'no headers',
                     this.logger.ts(ts)
                 );
-                if (callback) {
-                    callback(Locale.webdavNoLastModified, xhr);
-                    callback = null;
-                }
-                return;
             }
             const completedOpName =
                 config.op + (config.op.charAt(config.op.length - 1) === 'e' ? 'd' : 'ed');
             this.logger.debug(completedOpName, config.path, rev, this.logger.ts(ts));
             if (callback) {
-                callback(null, xhr, rev ? { rev } : null);
+                callback(null, xhr, rev ? { rev } : config.nostat ? null : { rev: null });
                 callback = null;
             }
         });

@@ -182,6 +182,20 @@ Pick **WebDAV** on the KeeWeb open screen:
   a save is one PUT — well inside the limit.
 * Known quirks: 411 (Content-Length required — shell PUTs satisfy it), 503
   (rate limited).
+* Servers that do not send `Last-Modified` still open fine: revision-based
+  conflict detection is skipped in that case. Enable "always reload the file"
+  in the file settings if you want change detection anyway.
+
+## Support and contact
+
+If this app saves you some time, you can buy me a coffee; the official account
+carries release notes in Chinese.
+
+| WeChat reward code | WeChat official account |
+| --- | --- |
+| <img src="app/content/img/reward-qr.jpg" width="180" alt="WeChat reward code"> | <img src="app/content/img/wechat-official.jpg" width="180" alt="WeChat official account"> |
+
+Email: <wangyantsing@qq.com>
 
 ## Data and security
 
@@ -189,7 +203,7 @@ Pick **WebDAV** on the KeeWeb open screen:
   master password and key file are never written to disk.
 * The shell's `webdav_request` allows only the methods WebDAV needs and only
   http/https; it is not a generic proxy.
-* The future HTTP API binds `127.0.0.1` only, uses the KeePassHTTP pairing
-  crypto, and requires explicit confirmation for the first connection.
+* The HTTP API binds `127.0.0.1` only, uses the KeePassHTTP pairing crypto, and
+  requires explicit confirmation for the first connection.
 * MIT, same as upstream; upstream docs live in
   [docs/README.upstream.md](docs/README.upstream.md).

@@ -121,9 +121,9 @@ jobs:
           # web app as one zip
           (cd artifacts/keeweb-next-web && zip -qr "$OLDPWD/release/keeweb-next-web.zip" .)
           # installer bundles keep their per-os names
-          find artifacts -path '*bundle*' -type f \
+          find artifacts -type f \
             \( -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \
-               -o -name '*.dmg' -o -name '*.app*' -o -name '*.msi' -o -name '*.exe' \
+               -o -name '*.dmg' -o -name '*.msi' -o -name '*.exe' \
             \) -exec cp {} release/ \;
           # macOS .app arrives as a directory inside the artifact
           find artifacts -type d -name '*.app' | while read -r app; do

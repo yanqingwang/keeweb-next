@@ -23,6 +23,13 @@ Not ported, and why: auto-type needs a native keyboard injector the webview shel
 not have; USB/YubiKey plugins need native modules and `ykman`; Windows-specific
 (KeeAgent, DPAPI) plugins have no equivalent here.
 
+## Runtime notes
+
+The plugins read the app through its events (`filter`, `entry-selected`) instead of
+reaching into models, so nothing in the app had to change for them. A plugin installed
+mid-session picks the selection up on the next entry click; the entry list itself is
+then read from the open file, which is what the age marks and the duplicate report use.
+
 ## Signing
 
 KeeWeb verifies every plugin resource and the gallery with RSASSA-PKCS1-v1_5 / SHA-256.

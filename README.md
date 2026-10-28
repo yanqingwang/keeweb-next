@@ -48,7 +48,9 @@ flowchart LR
 * **Web 模式（无壳）**：`dist/` 是纯静态站点，任何浏览器可跑；本地文件用
   File System Access API，WebDAV 受浏览器 CORS 限制。
 * **WebView 模式（默认桌面形态）**：Tauri 2 加载同一份 `dist/`，WebDAV 走
-  Rust `reqwest`，无 CORS 限制、无 Node、无 Chromium 捆绑。
+  Rust `reqwest`，无 CORS 限制、无 Node、无 Chromium 捆绑。壳在 `127.0.0.1`
+  随机端口起一个只读静态服务器提供 `dist/`（WebKitGTK 不执行 `tauri://` 页面
+  上的脚本），回环来源与 `localhost` 同等对待，不触发 "Not Secure!" 拦截。
 * **本机 HTTP API（进行中）**：壳进程在 `127.0.0.1` 起 KeePassHTTP 兼容端点，
   浏览器插件/KeePass 插件直接对话；密钥配对沿用 KeePassHTTP 的
   test-associate / associate / get-logins / set-login 流程（AES-256-CBC）。
@@ -67,6 +69,11 @@ flowchart LR
   可开可存；高于 4.1 的版本号被拒绝。`npm test` 全绿（86 passing）。
 * Rust 集成测试（`src-tauri/tests/webdav_mock.rs`）：本地 mock 服务器验证
   PUT 带 `Content-Length`（非 chunked）、Basic 认证头、响应头/体回传。
+* 补全壳的 `Launcher` API（窗口控制、剪贴板、配置存储、更新器置为禁用，
+  仅 Node 可用的文件/auto-type 接口留空实现）；缺它就是白屏——启动时
+  `Updater.init()` 抛 TypeError，页面停在空 body。
+* 本地文件存储需要原生文件后端，壳内以 `fileStorageSupported` 显式关闭，
+  离线缓存退回浏览器 IndexedDB 版本。
 * Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制）。
 
 ## 尚未完成 / 路线图
@@ -122,8 +129,8 @@ npm test                                     # 浏览器测试（需要 CHROME_B
 * 拖拽：`titlebarStyle: hidden` 下的拖动条带带 `data-tauri-drag-region`。
 * 图标：`icon.icns` 随包安装。
 * 设置持久化在 `~/Library/Application Support/info.keeweb.next/config/`。
-* CI 在 `macos-14`（Apple Silicon）与 `macos-13`（Intel）原生编译并出
-  dmg/app 包（见 `.github/workflows/build-next.yml`）。
+* CI 在 `macos-14`（Apple Silicon）原生编译并出 dmg/app 包
+  （`.github/workflows/build-next.yml`；Intel 版省略以省 macOS 分钟数）。
 
 未迁移的 macOS 专属能力：Touch ID / 硬件加密存储（原 Electron
 hardware-crypto）、auto-type、全局快捷键、托盘。

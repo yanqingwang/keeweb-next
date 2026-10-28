@@ -131,11 +131,19 @@ jobs:
             (cd "$(dirname "$app")" && zip -qry "$OLDPWD/release/${name}.zip" "$name")
           done
           ls -l release
-      - name: Create release
+      - name: Create or update release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" release/* \
-            --title "KeeWeb Next $GITHUB_REF_NAME" \
-            --notes-file .github/release-notes.md \
-            --latest
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/* --clobber
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "KeeWeb Next $GITHUB_REF_NAME" \
+              --notes-file .github/release-notes.md \
+              --latest
+          else
+            gh release create "$GITHUB_REF_NAME" release/* \
+              --title "KeeWeb Next $GITHUB_REF_NAME" \
+              --notes-file .github/release-notes.md \
+              --latest
+          fi

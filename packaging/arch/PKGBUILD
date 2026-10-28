@@ -29,10 +29,23 @@ build() {
 package() {
     cd "$pkgname"
 
+    # the binary embeds the web assets (frontendDist); the dist copy is kept
+    # for the browser mode (keeweb-next-browser)
     install -d "$pkgdir/usr/share/keeweb-next"
     cp -a dist "$pkgdir/usr/share/keeweb-next/dist"
 
     install -Dm755 src-tauri/target/release/keeweb-next \
         "$pkgdir/usr/bin/keeweb-next"
+
+    # desktop application integration
+    install -Dm644 packaging/arch/keeweb-next.desktop \
+        "$pkgdir/usr/share/applications/keeweb-next.desktop"
+    install -Dm644 src-tauri/icons/128x128.png \
+        "$pkgdir/usr/share/icons/hicolor/128x128/apps/keeweb-next.png"
+    install -Dm644 src-tauri/icons/32x32.png \
+        "$pkgdir/usr/share/icons/hicolor/32x32/apps/keeweb-next.png"
+    install -Dm644 src-tauri/icons/512x512.png \
+        "$pkgdir/usr/share/icons/hicolor/512x512/apps/keeweb-next.png"
+
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

@@ -24,7 +24,8 @@
     ],
     "security": {
       "csp": null
-    }
+    },
+    "enable-gtk-app-id": true
   },
   "bundle": {
     "active": true,

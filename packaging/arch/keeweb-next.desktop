@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=KeeWeb Next
+GenericName=Password Manager
+Comment=KeePass-compatible password manager with WebDAV sync
+Exec=keeweb-next
+Icon=keeweb-next
+Terminal=false
+Categories=Utility;Security;
+Keywords=password;vault;keepass;kdbx;webdav;
+StartupWMClass=info.keeweb.next

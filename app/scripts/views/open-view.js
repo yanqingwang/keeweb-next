@@ -52,6 +52,7 @@ class OpenView extends View {
         'click .open__settings-yubikey': 'selectYubiKeyChalResp',
         'click .open__last-item': 'openLast',
         'click .open__last-item-icon-star': 'togglePinLast',
+        'change .open__remember-key-check': 'toggleRememberKeyFile',
         'click .open__icon-generate': 'toggleGenerator',
         'click .open__message-cancel-btn': 'openMessageCancelClick',
         dragover: 'dragover',
@@ -120,6 +121,7 @@ class OpenView extends View {
             lastOpenFiles: this.getLastOpenFiles(),
             canOpenKeyFromDropbox: !Launcher && Storage.dropbox.enabled,
             demoOpened: this.model.settings.demoOpened,
+            rememberKeyFiles: this.model.settings.rememberKeyFiles === 'path',
             storageProviders,
             unlockMessageRes: this.model.unlockMessageRes,
             canOpen: this.model.settings.canOpen,
@@ -1020,6 +1022,14 @@ class OpenView extends View {
         }
         const fileInfo = this.model.fileInfos.get(lastOpenFiles[this.currentSelectedIndex].id);
         this.showOpenFileInfo(fileInfo);
+    }
+
+    toggleRememberKeyFile(e) {
+        const remember = e.target.checked;
+        this.model.settings.rememberKeyFiles = remember ? 'path' : '';
+        if (!remember) {
+            this.params.keyFilePath = null;
+        }
     }
 
     togglePinLast(e) {

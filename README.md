@@ -84,7 +84,9 @@ flowchart LR
   （`Links.Plugins`），签名方式见 `plugins/README.md`。
 * 打开记录：最近 5 条保留在打开页，可点星标「收藏」置顶，收藏项不受 5 条上限裁剪。
 * WebDAV 连接信息随记录保存（数据库 uuid 参与的混淆密码），再次打开时自动回填
-  URL、用户名与密码，无需重输。
+  URL、用户名与密码，无需重输；保存密码可在配置里的「Remember password」取消。
+* 密钥文件默认按路径记住，再次打开自动读取；密码输入框旁的「Remember key file」
+  可随时关闭。壳内读取密钥文件走与数据库相同的本地文件通道。
 * Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制 + `plugins/` 与
   `browser-extension/` 离线副本）。
 

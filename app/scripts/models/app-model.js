@@ -716,7 +716,10 @@ class AppModel {
                 params.keyFileData = FileModel.createKeyFileWithHash(fileInfo.keyFileHash);
             } else if (this.settings.rememberKeyFiles === 'path' && fileInfo.keyFilePath) {
                 params.keyFilePath = fileInfo.keyFilePath;
-                if (Storage.file.enabled) {
+                // Storage.file.load works through the launcher even when local
+                // file storage is not listed; the shell reads key files the
+                // same way it reads databases
+                if (Storage.file.enabled || Launcher) {
                     needLoadKeyFile = true;
                 }
             }

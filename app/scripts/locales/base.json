@@ -787,5 +787,7 @@
   "openPinFile": "Pin to top",
   "openUnpinFile": "Unpin",
   "openSavePassword": "Remember password",
-  "openSavePasswordDesc": "Saved on this computer, obfuscated with the database id; clear it to type the password on every start."
+  "openSavePasswordDesc": "Saved on this computer, obfuscated with the database id; clear it to type the password on every start.",
+  "openRememberKeyFile": "Remember key file",
+  "openRememberKeyFileDesc": "Use this key file automatically the next time this database is opened"
 }

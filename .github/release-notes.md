@@ -1,5 +1,22 @@
 KeeWeb Next — KeeWeb in the system WebView, with a Tauri 2 shell.
 
+**In 0.1.3 — password filling behaves like KeePassXC**
+
+- `get-logins` now answers with every matching entry (capped at 30) instead of
+  a single best match. The extension compares what a page submits against that
+  list, so the single-match reply made it offer to *save* a password it had
+  just handed out — and answering “yes” created a duplicate entry. Multi-account
+  sites are picked in the extension’s own popup, no dialog in the app window.
+- The extension permission dialog can be remembered (“remember this choice”,
+  on by default), so it does not reappear after every restart; Settings →
+  Browser can show and clear that decision, leads with KeePassXC-Browser
+  (including download links) and shows live sessions.
+- First-time requests now raise the app window: `Launcher.showMainWindow` was a
+  no-op in the webview shell, so the dialog waited invisibly while the browser
+  appeared to do nothing.
+- The About page library versions are injected from package.json at build time
+  (and a URL that was rendering as a version is gone).
+
 **Fixes in 0.1.2 — KeePassXC-Browser could not connect**
 
 - macOS: the native-messaging manifests were only written to the Linux paths

@@ -1,2 +1,2 @@
-1b98bec7d2df3013a9aa104efc275c0f3b519bfebc973484e1bb1458a57da633  release/KeeWeb-Next_0.1.2_aarch64.dmg
-2081a37931496cd2695afbfb571c5084fe6a68df2408b057c96bf15d2b12ce3f  release/KeeWeb-Next_0.1.2_aarch64.app.zip
+7ed3e8ec2041d6e7d0c74fc993b7c1fddf2a3019b65e12e3875f33fca2896a29  release/KeeWeb-Next_0.1.3_aarch64.dmg
+9da82f50ed93e60d0d3684f6bba3ef4304eaf49c5a9ba2cadc0837de8ca1d063  release/KeeWeb-Next_0.1.3_aarch64.app.zip

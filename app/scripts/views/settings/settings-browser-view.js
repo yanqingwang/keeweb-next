@@ -21,7 +21,6 @@ class SettingsBrowserView extends View {
     events = {
         'change .check-enable-for-browser': 'changeEnableForBrowser',
         'change .settings__browser-native-check': 'changeNativeIntegration',
-        'change .settings__browser-remembered-ask-get': 'changeRememberedAskGet',
         'click .settings__browser-btn-forget-connect': 'forgetRememberedConnect',
         'change .settings__browser-focus-if-locked': 'changeFocusIfLocked',
         'change .settings__browser-focus-if-empty': 'changeFocusIfEmpty',
@@ -50,6 +49,7 @@ class SettingsBrowserView extends View {
                     fileAccess,
                     noFileAccess: fileAccess && !fileAccess.some((f) => f.checked),
                     showAskSave: session.permissions?.askSave !== undefined,
+                    native: session.appName === 'native messaging',
                     connectedDate: DateFormat.dtStr(session.connectedDate)
                 };
             })
@@ -64,10 +64,6 @@ class SettingsBrowserView extends View {
             data.kpxcFirefox = Links.KpxcForFirefox;
             data.kpxcChrome = Links.KpxcForChrome;
             data.kpxcProject = Links.KpxcProject;
-            data.rememberedAskGet = AppSettingsModel.extensionConnectRemembered
-                ? AppSettingsModel.extensionConnectRemembered.askGet
-                : 'multiple';
-            data.connectIsRemembered = !!AppSettingsModel.extensionConnectRemembered;
         } else if (BrowserExtensionConnector.isEnabled()) {
             data.extensionNames = ['KeeWeb Connect', 'KeePassXC-Browser'];
             data.settingsPerBrowser = this.getSettingsPerBrowser();
@@ -104,11 +100,6 @@ class SettingsBrowserView extends View {
             });
             return { browser, browserName, extensions };
         });
-    }
-
-    changeRememberedAskGet(e) {
-        const remembered = AppSettingsModel.extensionConnectRemembered || {};
-        AppSettingsModel.extensionConnectRemembered = { ...remembered, askGet: e.target.value };
     }
 
     forgetRememberedConnect() {

@@ -63,8 +63,7 @@ const utilLibs = [
     lib(
         'marked',
         'https://marked.js.org/',
-        'a markdown parser and compiler, &copy; 2018+, MarkedJS (https://github.com/chjj/)',
-        Links.LicenseApache
+        'a markdown parser and compiler, &copy; 2018+, MarkedJS (https://github.com/chjj/)'
     ),
     lib(
         'dompurify',
@@ -93,13 +92,12 @@ const styleLibs = [
     lib(
         'bourbon',
         'https://www.bourbon.io/',
-        'a lightweight Sass tool set, &copy; 2011-2020 thoughtbot, inc.',
-        '7'
+        'a lightweight Sass tool set, &copy; 2011-2020 thoughtbot, inc.'
     ),
     lib(
         'normalize.css',
         'https://necolas.github.io/normalize.css/',
-        'a modern, HTML5-ready alternative to CSS resets, &copy; Nicolas Gallagher and Jonathan Neumeister'
+        'a modern, HTML5-ready alternative to CSS resets, &copy; Nicolas Gallagher and Jonathan Neal'
     )
 ];
 

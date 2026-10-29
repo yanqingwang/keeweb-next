@@ -3,7 +3,7 @@ name = "keeweb-next"
 # tauri-cli needs to know which binary to bundle now that a second one
 # (keeweb-next-browser-host) ships next to it
 default-run = "keeweb-next"
-version = "0.1.2"
+version = "0.1.3"
 description = "KeeWeb with an optional Tauri webview shell"
 edition = "2021"
 license = "MIT"

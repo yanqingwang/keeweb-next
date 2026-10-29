@@ -1,11 +1,11 @@
 # KeeWeb Next — macOS install
 
-Built from `yanqingwang/keeweb-next`, version `0.1.2`, macOS arm64 (Apple Silicon).
+Built from `yanqingwang/keeweb-next`, version `0.1.3`, macOS arm64 (Apple Silicon).
 
 ## Download
 
-Grab `KeeWeb-Next_0.1.2_aarch64.dmg` (or the matching `…app.zip` bundle) from the GitHub **Releases**
-page for tag `v0.1.2`. The binaries are not committed to the repository —
+Grab `KeeWeb-Next_0.1.3_aarch64.dmg` (or the matching `…app.zip` bundle) from the GitHub **Releases**
+page for tag `v0.1.3`. The binaries are not committed to the repository —
 `SHA256SUMS.txt` next to this file lists their checksums.
 
 ## Install

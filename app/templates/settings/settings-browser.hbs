@@ -17,16 +17,7 @@
         <p class="muted-color">{{res 'setBrowserNativeDesc'}}</p>
         <h2>{{res 'setBrowserRememberedHeading'}}</h2>
         <div class="settings__browser-remembered">
-            <div><label for="settings__browser-remembered-ask-get">{{res 'setBrowserRememberedTitle'}}</label></div>
-            <select id="settings__browser-remembered-ask-get" class="input-base">
-                <option value="multiple" {{#ifeq rememberedAskGet 'multiple'}}selected{{/ifeq}}>
-                    {{res 'extensionConnectAskGetMultiple'}}
-                </option>
-                <option value="always" {{#ifeq rememberedAskGet 'always'}}selected{{/ifeq}}>
-                    {{res 'extensionConnectAskGetAlways'}}
-                </option>
-            </select>
-            <p class="muted-color">{{res 'setBrowserRememberedDesc'}}</p>
+            <p>{{res 'setBrowserRememberedDesc'}}</p>
             <button class="btn btn-secondary settings__browser-btn-forget-connect">{{res 'setBrowserRememberedForget'}}</button>
         </div>
         <h2>{{res 'setBrowserKphTitle'}}</h2>
@@ -183,6 +174,7 @@
                 {{#if session.noFileAccess}}
                     <p class="error-color">{{res 'setBrowserSessionsNoFileAccess'}}</p>
                 {{/if}}
+                {{#unless session.native}}
                 <div>
                     <label for="settings__browser-session-ask-get--{{session.connectionId}}">{{res 'extensionConnectAskGet'}}</label>
                     <select id="settings__browser-session-ask-get--{{session.connectionId}}"
@@ -196,6 +188,7 @@
                         </option>
                     </select>
                 </div>
+                {{/unless}}
                 {{#if session.showAskSave}}
                     <div>
                         <label for="settings__browser-session-ask-save--{{session.connectionId}}">{{res 'extensionConnectAskSave'}}</label>

@@ -12,6 +12,15 @@ const rootDir = path.join(__dirname, '..');
 
 const pkg = require('../package.json');
 
+// what the About page shows; devDependencies last, so pins like kdbxweb 2.1.1
+// override the caret range and reflect what is actually bundled
+const libraryVersions = { ...pkg.dependencies, ...pkg.devDependencies };
+for (const [name, version] of Object.entries(pkg.overrides || {})) {
+    if (name in libraryVersions || libraryVersions['@' + name]) {
+        libraryVersions[name] = version;
+    }
+}
+
 process.noDeprecation = true; // for css loaders
 
 function config(options) {
@@ -110,6 +119,14 @@ function config(options) {
                             }
                         }
                     ]
+                },
+                {
+                    test: /library-versions\.js$/,
+                    loader: 'string-replace-loader',
+                    options: {
+                        search: /@@LIB_VERSIONS/g,
+                        replace: JSON.stringify(JSON.stringify(libraryVersions))
+                    }
                 },
                 {
                     test: /runtime-info\.js$/,

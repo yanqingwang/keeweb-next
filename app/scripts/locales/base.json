@@ -783,7 +783,7 @@
   "setBrowserKphExtensions": "Extensions speaking this protocol",
   "setBrowserKphNote": "KeePassXC-Browser connects through the native host \"org.keepassxc.keepassxc_browser\", which this app installs for Chrome, Chromium, Edge, Brave, Vivaldi and Firefox at startup. If KeePassXC also provides that host, the last one installed wins. Associations last until the app quits, after which the extension asks again.",
   "setBrowserBundledTitle": "Extension shipped with the app",
-  "setBrowserBundledBody": "A manifest-v3 extension is installed to /usr/share/keeweb-next/browser-extension. Open chrome://extensions, turn on Developer mode, choose Load unpacked and pick that folder. For Firefox, use manifest.firefox.json from the same folder.",
+  "setBrowserBundledBody": "An alternative manifest-v3 extension lives in the repository under browser-extension/. Open chrome://extensions, enable Developer mode, choose Load unpacked and pick that folder (for Firefox rename manifest.firefox.json to manifest.json). Only needed if you would rather not use KeePassXC-Browser.",
   "openPinFile": "Pin to top",
   "openUnpinFile": "Unpin",
   "openSavePassword": "Remember password",
@@ -795,5 +795,11 @@
   "extensionConnectRemember": "Remember this choice and do not ask again",
   "setBrowserRememberedTitle": "When the browser asks for passwords:",
   "setBrowserRememberedDesc": "This is the choice you made in the extension confirmation dialog. \"Always\" asks which entry to use on every site; the other option fills a single match without asking.",
-  "setBrowserRememberedForget": "Forget this choice and ask again on the next connection"
+  "setBrowserRememberedForget": "Forget this choice and ask again on the next connection",
+  "setBrowserKpxcTitle": "KeePassXC-Browser (recommended)",
+  "setBrowserKpxcIntro": "Connects over native messaging, no server and no port. This app registers the host \"org.keepassxc.keepassxc_browser\" at startup for Firefox, Chrome, Chromium, Edge, Brave and Vivaldi — on macOS under ~/Library/Application Support, on Linux under ~/.config and ~/.mozilla. Associating needs no unlocked vault; reading passwords does. If KeePassXC is installed too, whichever app wrote the host manifest last wins — quit one of them and relaunch the other.",
+  "setBrowserKpxcInstall": "Get the extension:",
+  "setBrowserKpxcProject": "project page",
+  "setBrowserRememberedHeading": "Passwords returned to the browser",
+  "setBrowserKphTitle": "KeePassHTTP compatibility endpoint (optional)"
 }

@@ -61,6 +61,9 @@ class SettingsBrowserView extends View {
             data.httpEndpoint = 'http://127.0.0.1:19455';
             data.kphExtensions = Links.KphExtensions;
             data.nativeIntegration = AppSettingsModel.nativeBrowserIntegration !== false;
+            data.kpxcFirefox = Links.KpxcForFirefox;
+            data.kpxcChrome = Links.KpxcForChrome;
+            data.kpxcProject = Links.KpxcProject;
             data.rememberedAskGet = AppSettingsModel.extensionConnectRemembered
                 ? AppSettingsModel.extensionConnectRemembered.askGet
                 : 'multiple';

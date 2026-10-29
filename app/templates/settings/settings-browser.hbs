@@ -1,21 +1,21 @@
 <div class="settings__content">
     <h1><i class="fa fa-{{icon}} settings__head-icon"></i> {{res 'setBrowserTitle'}}</h1>
     {{#if httpApi}}
-        <p>{{res 'setBrowserKphIntro'}}</p>
-        <pre class="settings__pre input-base">{{httpEndpoint}}</pre>
-        <p>{{res 'setBrowserKphExtensions'}}:</p>
-        <ul>
-            {{#each kphExtensions as |ext|}}
-                <li><a href="{{ext.url}}" target="_blank" rel="noreferrer">{{ext.name}}</a></li>
-            {{/each}}
-        </ul>
-        <p class="muted-color">{{res 'setBrowserKphNote'}}</p>
+        <h2>{{res 'setBrowserKpxcTitle'}}</h2>
+        <p>{{res 'setBrowserKpxcIntro'}}</p>
+        <p>
+            {{res 'setBrowserKpxcInstall'}}:
+            <a href="{{kpxcFirefox}}" target="_blank" rel="noreferrer">Firefox</a> ·
+            <a href="{{kpxcChrome}}" target="_blank" rel="noreferrer">Chrome</a> ·
+            <a href="{{kpxcProject}}" target="_blank" rel="noreferrer">{{res 'setBrowserKpxcProject'}}</a>
+        </p>
         <div class="settings__browser-native">
             <input type="checkbox" class="input-base settings__browser-native-check"
                    id="settings__browser-native-check" {{#if nativeIntegration}}checked{{/if}} />
             <label for="settings__browser-native-check">{{res 'setBrowserNativeTitle'}}</label>
         </div>
         <p class="muted-color">{{res 'setBrowserNativeDesc'}}</p>
+        <h2>{{res 'setBrowserRememberedHeading'}}</h2>
         <div class="settings__browser-remembered">
             <div><label for="settings__browser-remembered-ask-get">{{res 'setBrowserRememberedTitle'}}</label></div>
             <select id="settings__browser-remembered-ask-get" class="input-base">
@@ -29,6 +29,14 @@
             <p class="muted-color">{{res 'setBrowserRememberedDesc'}}</p>
             <button class="btn btn-secondary settings__browser-btn-forget-connect">{{res 'setBrowserRememberedForget'}}</button>
         </div>
+        <h2>{{res 'setBrowserKphTitle'}}</h2>
+        <pre class="settings__pre input-base">{{httpEndpoint}}</pre>
+        <p>{{res 'setBrowserKphExtensions'}}:</p>
+        <ul>
+            {{#each kphExtensions as |ext|}}
+                <li><a href="{{ext.url}}" target="_blank" rel="noreferrer">{{ext.name}}</a></li>
+            {{/each}}
+        </ul>
         <h2>{{res 'setBrowserBundledTitle'}}</h2>
         <p>{{res 'setBrowserBundledBody'}}</p>
     {{else if desktop}}
@@ -120,7 +128,6 @@
         <label for="settings__browser-focus-if-empty">{{res 'setBrowserFocusIfEmpty'}}</label>
     </div>
 
-    {{#unless httpApi}}
     <h2>{{res 'setBrowserSessions'}}</h2>
     {{#if sessions.length}}
         <p>{{res 'setBrowserSessionsIntro'}}</p>
@@ -218,5 +225,4 @@
     {{else}}
         <p>{{res 'setBrowserSessionsEmpty'}}</p>
     {{/if}}
-    {{/unless}}
 </div>

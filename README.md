@@ -98,38 +98,52 @@ flowchart LR
   KeePassHTTP 端点已可用）。
 * 自动更新、托盘、全局快捷键、auto-type：Electron 时代功能，暂未迁移。
 
-## 浏览器集成（KeePassHTTP）
+## 浏览器集成
 
-壳启动时会监听 `127.0.0.1:19455` 的 KeePassHTTP 端点，浏览器扩展可以用它填写/保存登录：
+三种方式，按推荐程度排序：
 
-* **自带扩展**：`browser-extension/`（Manifest V3，Chrome/Edge/Chromium；Firefox 用
+### KeePassXC-Browser（推荐，native messaging）
+
+壳启动时为 Chrome/Chromium/Edge/Brave/Vivaldi 与 Firefox 写入
+`org.keepassxc.keepassxc_browser` 的主机清单，指向
+`/usr/bin/keeweb-next-browser-host`（macOS 指向
+`KeeWeb Next.app/Contents/MacOS/keeweb-next-browser-host`）；扩展按常规流程连接即可。
+若机器上同时装了 KeePassXC，同名清单会被最后安装的一方覆盖。
+清单位置按平台区分：Linux 是 `~/.config/<浏览器>/NativeMessagingHosts` 与
+`~/.mozilla/native-messaging-hosts`，macOS 统一在
+`~/Library/Application Support/{<浏览器>,Mozilla}/…`。
+
+* 关联（association）与 `get-databasehash` 不要求已解锁数据库，和 KeePassXC 一致，
+  扩展首次连接即可完成关联；只有真正读写条目的动作才要求数据库已解锁。
+* `get-logins` 返回该站点**全部**匹配条目（上限 30），与 KeePassXC 一致：扩展据此判断
+  页面提交的账号是否已知，不会把刚读出来的密码再提示“保存”一遍（否则会产生重复条目）；
+  多账号时在扩展自己的弹窗里挑选，而不是在应用窗口里弹选择框。
+* 授权弹窗可勾选「记住此选择，不再询问」，写入 `app-settings.json`，重启后不再询问；
+  设置 → 浏览器集成 里可随时修改或清除。
+* 「在返回密码前询问」的选项含义：**总是询问（即使只匹配一个条目）** 会在每个网站都
+  弹出选条目的框；默认「仅在匹配到多个条目时」则单个匹配直接填充、完全不弹窗。
+
+### 自带扩展（KeeWeb Connect 协议）
+
+* `browser-extension/`（Manifest V3，Chrome/Edge/Chromium；Firefox 用
   同目录的 `manifest.firefox.json` 改名）。打开 `chrome://extensions` → 开发者模式 →
   「加载已解压的扩展程序」→ 选择该目录（Arch 包内路径
   `/usr/share/keeweb-next/browser-extension`），点扩展图标 →「Connect to the app」。
   连接后聚焦页面上的登录框会直接弹出匹配的账号菜单，点选即填充；也可在扩展弹窗里
   保存当前页面已输入的登录。
-* **第三方扩展**：任何 KeePassHTTP 客户端都可以直连该端点，例如 chromeIPass、
-  KeePassHttp-Connector。
-* **KeePassXC-Browser**：通过 native messaging 直接连接。壳启动时会为
-  Chrome/Chromium/Edge/Brave/Vivaldi 与 Firefox 写入
-  `org.keepassxc.keepassxc_browser` 的主机清单，指向
-  `/usr/bin/keeweb-next-browser-host`（macOS 指向
-  `KeeWeb Next.app/Contents/MacOS/keeweb-next-browser-host`）；扩展按常规流程
-  连接即可。若机器上同时装了 KeePassXC，同名清单会被最后安装的一方覆盖。
-  清单位置按平台区分：Linux 是 `~/.config/<浏览器>/NativeMessagingHosts` 与
-  `~/.mozilla/native-messaging-hosts`，macOS 统一在
-  `~/Library/Application Support/{<浏览器>,Mozilla}/…`。
-* 关联（association）与 `get-databasehash` 不要求已解锁数据库，和 KeePassXC 一致，
-  这样扩展首次连接即可完成关联；只有真正读写条目的动作（`get-logins`、
-  `set-login` 等）才要求数据库已解锁——需要先解锁数据库才能取到密码。
-* 协议对齐 KeePassHTTP v2.3.1.0：支持 `get-logins` / `get-logins-count` /
-  `get-all-logins` / `get-logins-by-names` / `set-login`，响应带 HMAC-SHA256，
-  `SubmitUrl` 参与匹配。
+
+### KeePassHTTP 兼容端点（备选）
+
+* 任何 KeePassHTTP 客户端都可以直连 `127.0.0.1:19455`，例如 chromeIPass、
+  KeePassHttp-Connector。协议对齐 KeePassHTTP v2.3.1.0：`get-logins` /
+  `get-logins-count` / `get-all-logins` / `get-logins-by-names` / `set-login`，
+  响应带 HMAC-SHA256，`SubmitUrl` 参与匹配。
 * 扩展读取的是**当前解锁会话的实时数据**（遍历分组而非打开时的快照），
   由扩展保存的登录会标记文件已修改并立即走正常保存/同步流程写入 WebDAV。
 * 其他设备写入的新数据需要应用先完成同步（打开文件、保存或自动保存时触发）；
   扩展不会在每次查询时强制拉取远端。
-* 关联关系保存在壳进程内，重启应用后需重新确认一次。
+* KeePassHTTP 的关联密钥保存在壳进程内，重启应用后需重新确认一次；
+  KeePassXC-Browser 的授权决定已可持久化（见上）。
 
 ## 本机 HTTP API（KeePassHTTP 兼容）
 
@@ -147,7 +161,9 @@ flowchart LR
 
 ## 构建
 
-依赖：Node ≥ 20、Rust、`webkit2gtk-4.1`（Linux）、`clang/cmake/ninja/pkgconf`。
+依赖：Node 24 LTS、Rust、`webkit2gtk-4.1`（Linux）、`clang/cmake/ninja/pkgconf`。
+注意 Node 26 的 npm 11 会以 allow-scripts 拒绝本仓库的 git 依赖安装，
+Node 24 LTS 实测可用；macOS 一键脚本 `build-macos.sh` 已内置该版本处理。
 
 ```bash
 # Web 应用（无壳）

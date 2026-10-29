@@ -46,7 +46,11 @@ const Links = {
     KWCForFirefox: 'https://addons.mozilla.org/firefox/addon/keeweb-connect/',
     KWCForEdge:
         'https://microsoftedge.microsoft.com/addons/detail/keewebconnect/nmggpehkjmeaeocmaijenpejbepckinm',
-    KWCForSafari: 'https://apps.apple.com/app/keeweb-connect/id1565748094'
+    KWCForSafari: 'https://apps.apple.com/app/keeweb-connect/id1565748094',
+    KpxcForFirefox: 'https://addons.mozilla.org/firefox/addon/keepassxc-browser/',
+    KpxcForChrome:
+        'https://chromewebstore.google.com/detail/keepassxc-browser/oboonakemofpalcgghocfoadofidjkkk',
+    KpxcProject: 'https://github.com/keepassxreboot/keepassxc-browser'
 };
 
 export { Links };

@@ -783,7 +783,7 @@
   "setBrowserKphExtensions": "支持此协议的扩展",
   "setBrowserKphNote": "KeePassXC-Browser 通过原生宿主 \"org.keepassxc.keepassxc_browser\" 连接，本应用会在启动时为 Chrome、Chromium、Edge、Brave、Vivaldi 和 Firefox 安装该宿主。如果 KeePassXC 也提供了该宿主，最后安装的版本会生效。关联会持续到应用退出，之后扩展需要重新请求。",
   "setBrowserBundledTitle": "随应用附带的扩展",
-  "setBrowserBundledBody": "一个 manifest-v3 扩展会安装到 /usr/share/keeweb-next/browser-extension。打开 chrome://extensions，启用开发者模式，选择“加载已解压的扩展程序”，然后选中该文件夹。对于 Firefox，请使用同一文件夹中的 manifest.firefox.json。",
+  "setBrowserBundledBody": "仓库 browser-extension/ 目录下还有一个备用的 manifest-v3 扩展。打开 chrome://extensions，启用开发者模式，选择\"加载已解压的扩展程序\"并选中该目录（Firefox 请将 manifest.firefox.json 改名为 manifest.json）。仅在不想使用 KeePassXC-Browser 时才需要。",
   "openPinFile": "置顶",
   "openUnpinFile": "取消置顶",
   "openSavePassword": "记住密码",
@@ -795,5 +795,11 @@
   "extensionConnectRemember": "记住此选择，不再询问",
   "setBrowserRememberedTitle": "浏览器读取账号密码时：",
   "setBrowserRememberedDesc": "这是你在扩展授权弹窗里勾选\"记住\"后保存的选择。\"总是询问\"会在每个网站上都让你挑选条目；另一项则只匹配到一个条目时直接带入，不再询问。",
-  "setBrowserRememberedForget": "清除此选择，下次连接时重新询问"
+  "setBrowserRememberedForget": "清除此选择，下次连接时重新询问",
+  "setBrowserKpxcTitle": "KeePassXC-Browser（推荐）",
+  "setBrowserKpxcIntro": "通过原生消息连接，无需开启端口。本应用会在启动时为主机 \"org.keepassxc.keepassxc_browser\" 写入清单，覆盖 Firefox、Chrome、Chromium、Edge、Brave 和 Vivaldi——macOS 位于 ~/Library/Application Support，Linux 位于 ~/.config 和 ~/.mozilla。关联不需要解锁数据库，读取密码需要。如果同时安装了 KeePassXC，后写入清单的一方生效——退出其中一个，重启另一个即可。",
+  "setBrowserKpxcInstall": "安装扩展：",
+  "setBrowserKpxcProject": "项目主页",
+  "setBrowserRememberedHeading": "返回给浏览器的密码",
+  "setBrowserKphTitle": "KeePassHTTP 兼容端点（可选）"
 }

@@ -23,6 +23,8 @@ const KeeWebHash = '398d9c782ec76ae9e9877c2321cbda2b31fc6d18ccf0fed5ca4bd746bab4
 const ExtensionGroupIconId = 1;
 const DefaultExtensionGroupName = 'Browser';
 const ExtensionGroupNames = new Set(['KeePassXC-Browser Passwords', DefaultExtensionGroupName]);
+// a page with more matches than this needs the extension's own search anyway
+const KeePassXcEntryLimit = 30;
 
 const Errors = {
     noOpenFiles: {
@@ -308,6 +310,50 @@ function focusKeeWeb() {
     }
 }
 
+function entryToResponseEntry(entry) {
+    return {
+        group: entry.group.title,
+        login: entry.user || '',
+        name: entry.title || '',
+        password: entry.password?.getText() || '',
+        skipAutoSubmit: 'false',
+        stringFields: [],
+        uuid: kdbxweb.ByteUtils.bytesToHex(entry.entry.uuid.bytes)
+    };
+}
+
+// same matching findEntry uses, minus the single-entry shortcut and the
+// in-app picker: picking belongs to the extension's own popup
+async function matchingEntries(request) {
+    const payload = decryptRequest(request);
+    await checkContentRequestPermissions(request);
+
+    if (!payload.url) {
+        throw new Error('Empty url');
+    }
+
+    const filter = new SelectEntryFilter(
+        { url: payload.url, title: payload.title },
+        appModel,
+        getAvailableFiles(request),
+        undefined
+    );
+    filter.subdomains = false;
+    let entries = filter.getEntries();
+    if (!entries.length) {
+        filter.subdomains = true;
+        entries = filter.getEntries();
+    }
+    if (!entries.length) {
+        throw makeError(Errors.noMatches);
+    }
+
+    return {
+        count: Math.min(entries.length, KeePassXcEntryLimit),
+        entries: entries.slice(0, KeePassXcEntryLimit).map(entryToResponseEntry)
+    };
+}
+
 async function findEntry(request, returnIfOneMatch, filterOptions) {
     const payload = decryptRequest(request);
     await checkContentRequestPermissions(request);
@@ -506,6 +552,22 @@ const ProtocolHandlers = {
     },
 
     async 'get-logins'(request) {
+        if (isKeePassXcBrowser(request)) {
+            // KeePassXC answers with every match: the extension compares the
+            // credentials a page submits against this list to decide whether
+            // they are already known. Answering with a single best entry made
+            // it offer to save a password it had just handed out.
+            const { count, entries } = await matchingEntries(request);
+            return encryptResponse(request, {
+                success: 'true',
+                version: getVersion(request),
+                hash: KeeWebHash,
+                count,
+                entries,
+                id: ''
+            });
+        }
+
         const entry = await findEntry(request, true);
 
         return encryptResponse(request, {
@@ -513,17 +575,7 @@ const ProtocolHandlers = {
             version: getVersion(request),
             hash: KeeWebHash,
             count: 1,
-            entries: [
-                {
-                    group: entry.group.title,
-                    login: entry.user || '',
-                    name: entry.title || '',
-                    password: entry.password?.getText() || '',
-                    skipAutoSubmit: 'false',
-                    stringFields: [],
-                    uuid: kdbxweb.ByteUtils.bytesToHex(entry.entry.uuid.bytes)
-                }
-            ],
+            entries: [entryToResponseEntry(entry)],
             id: ''
         });
     },

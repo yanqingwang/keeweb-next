@@ -25,10 +25,10 @@ jobs:
     name: Web app
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         # the lockfile references keeweb's git forks; the default npm config
@@ -40,7 +40,7 @@ jobs:
         run: npm ci --allow-git=all --allow-remote=all
       - name: Build
         run: npm run build:web
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: keeweb-next-web
           path: dist/
@@ -63,10 +63,10 @@ jobs:
             bundles: msi,nsis
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
       - name: Linux dependencies
@@ -89,7 +89,7 @@ jobs:
       - name: Test (Rust)
         if: runner.os != 'Windows'
         run: cargo test --manifest-path src-tauri/Cargo.toml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: keeweb-next-${{ matrix.os }}
           path: src-tauri/target/release/bundle/**
@@ -110,8 +110,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           path: artifacts
       - name: Collect assets

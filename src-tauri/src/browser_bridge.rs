@@ -1,25 +1,25 @@
-#![cfg(unix)]
 
 //! Native-messaging bridge for browser extensions.
 //!
 //! The browser side is the mature KeePassXC-Browser extension: it speaks the
 //! KeePassXC protocol over native messaging. A small helper binary
 //! (`keeweb-next-browser-host`) is registered as the native host; it forwards
-//! each framed JSON message from the browser to this process over a Unix
-//! socket, and the webview answers through the same protocol implementation it
-//! already uses for the in-page bridge.
+//! each framed JSON message from the browser to this process over a loopback
+//! TCP port, and the webview answers through the same protocol implementation
+//! it already uses for the in-page bridge.
 //!
-//! Only the user can reach the socket: it lives in `$XDG_RUNTIME_DIR` (or a
-//! 0700 directory under /tmp) and is created with 0600 permissions.
+//! Only the user can reach the port: it binds 127.0.0.1 with a random port and
+//! requires a token read from a 0600 endpoint file.
 
 use std::io::{BufRead, BufReader, Write};
-use std::os::unix::fs::PermissionsExt;
-use std::os::unix::net::{UnixListener, UnixStream};
+use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
 use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::Emitter;
@@ -71,38 +71,53 @@ impl BrowserState {
     }
 }
 
-pub fn socket_path() -> PathBuf {
-    crate::browser_socket::socket_path()
+pub fn endpoint_path() -> PathBuf {
+    crate::browser_socket::endpoint_path()
 }
 
-/// Binds the socket and serves one thread per browser connection.
+/// Binds a loopback port and serves one thread per browser connection.
 pub fn serve(app: tauri::AppHandle, state: Arc<BrowserState>) {
-    let path = socket_path();
-    if let Err(e) = crate::browser_socket::prepare_dir(&path) {
-        eprintln!("[browser-bridge] cannot prepare socket dir: {}", e);
-        return;
-    }
-    let _ = std::fs::remove_file(&path);
-    let listener = match UnixListener::bind(&path) {
+    let listener = match TcpListener::bind(("127.0.0.1", 0)) {
         Ok(listener) => listener,
         Err(e) => {
-            eprintln!("[browser-bridge] cannot bind {:?}: {}", path, e);
+            eprintln!("[browser-bridge] cannot bind loopback port: {}", e);
             return;
         }
     };
-    let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+    let port = match listener.local_addr() {
+        Ok(addr) => addr.port(),
+        Err(e) => {
+            eprintln!("[browser-bridge] cannot read listener address: {}", e);
+            return;
+        }
+    };
+    let mut token_bytes = [0u8; 32];
+    if getrandom::fill(&mut token_bytes).is_err() {
+        eprintln!("[browser-bridge] cannot generate an endpoint token");
+        return;
+    }
+    let token = STANDARD.encode(token_bytes);
+    let path = endpoint_path();
+    if let Err(e) = crate::browser_socket::write_endpoint(&path, port, &token) {
+        eprintln!("[browser-bridge] cannot write endpoint file: {}", e);
+        return;
+    }
     let mut connection_id = 0u64;
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
         connection_id += 1;
         let app = app.clone();
         let state = state.clone();
-        std::thread::spawn(move || serve_connection(stream, connection_id, app, state));
+        let token = token.clone();
+        std::thread::spawn(move || {
+            serve_connection(stream, token, connection_id, app, state)
+        });
     }
 }
 
 fn serve_connection(
-    stream: UnixStream,
+    stream: TcpStream,
+    token: String,
     connection_id: u64,
     app: tauri::AppHandle,
     state: Arc<BrowserState>,
@@ -112,7 +127,11 @@ fn serve_connection(
         Err(_) => return,
     };
     let mut writer = write_stream;
-    let reader = BufReader::new(stream);
+    let mut reader = BufReader::new(stream);
+    let mut auth = String::new();
+    if reader.read_line(&mut auth).is_err() || auth.trim() != token {
+        return;
+    }
     for line in reader.lines() {
         let Ok(line) = line else { break };
         let Ok(request) = serde_json::from_str::<Value>(&line) else {
@@ -274,8 +293,16 @@ pub fn manifest_targets(home: &std::path::Path) -> Vec<ManifestTarget> {
     targets
 }
 
+fn home_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    let home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME"));
+    #[cfg(not(target_os = "windows"))]
+    let home = std::env::var_os("HOME");
+    home.map(PathBuf::from)
+}
+
 pub fn install_manifests() {
-    let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
+    let Some(home) = home_dir() else {
         return;
     };
     install_manifests_in(&home);
@@ -306,6 +333,13 @@ pub fn install_manifests_in(home: &std::path::Path) {
         "allowed_extensions": [FIREFOX_EXTENSION_ID],
     });
 
+    #[cfg(target_os = "windows")]
+    {
+        install_windows_manifests(home, &chrome_manifest, &firefox_manifest);
+        return;
+    }
+
+    #[cfg(not(target_os = "windows"))]
     for target in manifest_targets(home) {
         if !target.installed {
             continue;
@@ -326,29 +360,125 @@ fn host_binary_path() -> Option<PathBuf> {
             return Some(path);
         }
     }
+    #[cfg(target_os = "windows")]
+    let packaged = PathBuf::from(r"C:\Program Files\KeeWeb Next\keeweb-next-browser-host.exe");
+    #[cfg(not(target_os = "windows"))]
     let packaged = PathBuf::from("/usr/bin/keeweb-next-browser-host");
     if packaged.is_file() {
         return Some(packaged);
     }
     // development builds keep the helper next to the app binary
+    let helper_name = if cfg!(windows) {
+        "keeweb-next-browser-host.exe"
+    } else {
+        "keeweb-next-browser-host"
+    };
     let sibling = std::env::current_exe()
         .ok()
-        .and_then(|exe| exe.parent().map(|dir| dir.join("keeweb-next-browser-host")))?;
+        .and_then(|exe| exe.parent().map(|dir| dir.join(helper_name)))?;
     sibling.is_file().then_some(sibling)
 }
 
 pub fn remove_manifests() {
-    let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
+    let Some(home) = home_dir() else {
         return;
     };
     remove_manifests_in(&home);
 }
 
 pub fn remove_manifests_in(home: &std::path::Path) {
+    #[cfg(target_os = "windows")]
+    {
+        remove_windows_manifests(home);
+        return;
+    }
+
+    #[cfg(not(target_os = "windows"))]
     for target in manifest_targets(home) {
         let path = target.dir.join(format!("{}.json", HOST_NAME));
         let _ = std::fs::remove_file(path);
     }
+}
+
+#[cfg(target_os = "windows")]
+fn install_windows_manifests(
+    home: &std::path::Path,
+    chrome_manifest: &Value,
+    firefox_manifest: &Value,
+) {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+
+    let dir = home
+        .join("AppData")
+        .join("Roaming")
+        .join("KeeWeb Next")
+        .join("native-hosts");
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let chrome_path = dir.join("chrome.json");
+    let firefox_path = dir.join("firefox.json");
+    let _ = std::fs::write(
+        &chrome_path,
+        serde_json::to_vec_pretty(chrome_manifest).unwrap_or_default(),
+    );
+    let _ = std::fs::write(
+        &firefox_path,
+        serde_json::to_vec_pretty(firefox_manifest).unwrap_or_default(),
+    );
+
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let register = |key: &str, manifest: &std::path::Path| {
+        if let Ok((subkey, _)) = hkcu.create_subkey(key) {
+            let _ = subkey.set_value("", &manifest.to_string_lossy().to_string());
+        }
+    };
+    for browser in [
+        "Google\\Chrome",
+        "Chromium",
+        "Microsoft\\Edge",
+        "BraveSoftware\\Brave-Browser",
+        "Vivaldi",
+    ] {
+        register(
+            &format!("Software\\{}\\NativeMessagingHosts\\{}", browser, HOST_NAME),
+            &chrome_path,
+        );
+    }
+    register(
+        &format!("Software\\Mozilla\\NativeMessagingHosts\\{}", HOST_NAME),
+        &firefox_path,
+    );
+}
+
+#[cfg(target_os = "windows")]
+fn remove_windows_manifests(home: &std::path::Path) {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    for browser in [
+        "Google\\Chrome",
+        "Chromium",
+        "Microsoft\\Edge",
+        "BraveSoftware\\Brave-Browser",
+        "Vivaldi",
+    ] {
+        let path = format!("Software\\{}\\NativeMessagingHosts", browser);
+        let _ = hkcu.delete_subkey_all(format!("{}\\{}", path, HOST_NAME));
+    }
+    let _ = hkcu.delete_subkey_all(format!(
+        "Software\\Mozilla\\NativeMessagingHosts\\{}",
+        HOST_NAME
+    ));
+    let dir = home
+        .join("AppData")
+        .join("Roaming")
+        .join("KeeWeb Next")
+        .join("native-hosts");
+    let _ = std::fs::remove_file(dir.join("chrome.json"));
+    let _ = std::fs::remove_file(dir.join("firefox.json"));
 }
 
 #[tauri::command]

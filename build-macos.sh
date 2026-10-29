@@ -27,6 +27,9 @@ fi
 # Web app first: src-tauri/tauri.conf.json bundles ../dist as frontendDist.
 npm run build:web
 
+# Native messaging helper; externalBin bundling expects the triple suffix.
+node scripts/prepare-browser-host.mjs
+
 # Native shell + installer bundles.
 npx tauri build --bundles dmg,app
 

@@ -95,7 +95,7 @@
     "set-legacy": "export NODE_OPTIONS=--openssl-legacy-provider",
     "tauri": "tauri",
     "build:web": "cross-env NODE_OPTIONS=--openssl-legacy-provider grunt build-web-app",
-    "build:shell": "tauri build",
+    "build:shell": "node scripts/prepare-browser-host.mjs && tauri build",
     "dev:shell": "tauri dev"
   },
   "author": {

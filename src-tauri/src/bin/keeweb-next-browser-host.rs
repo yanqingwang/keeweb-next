@@ -1,19 +1,15 @@
-#[cfg(unix)]
-#[path = "../browser_socket.rs"]
-mod browser_socket;
-
-#[cfg(unix)]
-mod host {
-
 //! Native messaging host for KeePassXC-Browser.
 //!
 //! The browser starts this helper when the extension opens its native port.
 //! Messages arrive on stdin as a 4-byte little-endian length followed by JSON;
 //! each one is forwarded, newline-delimited, to the running KeeWeb Next app
-//! over its Unix socket, and the answer goes back the same way.
+//! over its loopback endpoint, and the answer goes back the same way.
+
+#[path = "../browser_socket.rs"]
+mod browser_socket;
 
 use std::io::{Read, Write};
-use std::os::unix::net::UnixStream;
+use std::net::TcpStream;
 use std::time::Duration;
 
 fn read_message<R: Read>(reader: &mut R) -> Option<Vec<u8>> {
@@ -35,20 +31,24 @@ fn write_message<W: Write>(writer: &mut W, body: &[u8]) {
     let _ = writer.flush();
 }
 
-fn connect() -> Option<UnixStream> {
-    let path = crate::browser_socket::socket_path();
+fn connect() -> Option<TcpStream> {
+    let path = browser_socket::endpoint_path();
     for _ in 0..20 {
-        if let Ok(stream) = UnixStream::connect(&path) {
-            let _ = stream.set_read_timeout(Some(Duration::from_secs(130)));
-            let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
-            return Some(stream);
+        if let Some((port, token)) = browser_socket::read_endpoint(&path) {
+            if let Ok(mut stream) = TcpStream::connect(("127.0.0.1", port)) {
+                let _ = stream.set_read_timeout(Some(Duration::from_secs(130)));
+                let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
+                if stream.write_all(token.as_bytes()).is_ok() && stream.write_all(b"\n").is_ok() {
+                    return Some(stream);
+                }
+            }
         }
         std::thread::sleep(Duration::from_millis(100));
     }
     None
 }
 
-pub fn main() {
+fn main() {
     let stdin = std::io::stdin();
     let mut input = stdin.lock();
     let mut output = std::io::stdout();
@@ -88,18 +88,4 @@ pub fn main() {
         }
         write_message(&mut output, line.trim_end().as_bytes());
     }
-}
-
-
-}
-
-#[cfg(unix)]
-fn main() {
-    host::main();
-}
-
-#[cfg(not(unix))]
-fn main() {
-    eprintln!("keeweb-next-browser-host is only supported on Linux and macOS");
-    std::process::exit(1);
 }

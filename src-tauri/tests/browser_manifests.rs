@@ -97,18 +97,18 @@ fn the_firefox_manifest_is_written_even_before_mozilla_dir_exists() {
 }
 
 #[test]
-fn the_socket_never_lives_in_a_shared_directory() {
-    // The bug: the socket was placed straight in $TMPDIR (/tmp), and preparing
+fn the_endpoint_never_lives_in_a_shared_directory() {
+    // The old Unix socket was placed straight in $TMPDIR (/tmp), and preparing
     // it chmod'ed that shared directory to 0700 — impossible for a normal user,
     // fatal for the bridge.
-    if std::env::var_os("KEEWEB_BROWSER_SOCKET").is_some()
+    if std::env::var_os("KEEWEB_BROWSER_ENDPOINT").is_some()
         || std::env::var_os("XDG_RUNTIME_DIR").is_some()
     {
         return; // overridden environment, nothing to assert about defaults
     }
 
-    let path = browser_socket::socket_path();
-    let dir = path.parent().expect("socket has a parent");
+    let path = browser_socket::endpoint_path();
+    let dir = path.parent().expect("endpoint has a parent");
 
     #[cfg(target_os = "macos")]
     {
@@ -119,13 +119,31 @@ fn the_socket_never_lives_in_a_shared_directory() {
         );
     }
 
-    assert_ne!(dir, std::env::temp_dir(), "socket must not sit in the temp dir");
-    assert_ne!(dir, Path::new("/tmp"), "socket must not sit in /tmp");
+    assert_ne!(dir, std::env::temp_dir(), "endpoint must not sit in the temp dir");
+    assert_ne!(dir, Path::new("/tmp"), "endpoint must not sit in /tmp");
     assert!(
         dir.components().count() > 2,
-        "socket directory must be private to the app: {}",
+        "endpoint directory must be private to the app: {}",
         dir.display()
     );
+}
+
+#[test]
+fn the_endpoint_file_is_private_and_round_trips() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let base = std::env::temp_dir().join(format!("kw-endpoint-test-{}", std::process::id()));
+    let path = base.join("nested").join("endpoint.json");
+
+    browser_socket::write_endpoint(&path, 41234, "test-token").expect("write endpoint");
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o600, "endpoint file must be private");
+    assert_eq!(
+        browser_socket::read_endpoint(&path),
+        Some((41234, "test-token".to_string()))
+    );
+
+    let _ = std::fs::remove_dir_all(&base);
 }
 
 #[test]

@@ -1,4 +1,3 @@
-use std::sync::Mutex;
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
@@ -69,10 +68,7 @@ impl Vault for MockVault {
 }
 
 fn state() -> ServerState {
-    ServerState {
-        associations: Mutex::new(Default::default()),
-        vault: Box::new(MockVault),
-    }
+    ServerState::load(Box::new(MockVault), None)
 }
 
 fn parse(value: serde_json::Value) -> Request {

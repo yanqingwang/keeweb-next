@@ -1,11 +1,11 @@
-#[cfg(unix)]
+#[cfg(desktop)]
 pub mod browser_bridge;
 
-#[cfg(unix)]
+#[cfg(desktop)]
 #[path = "browser_socket.rs"]
 pub mod browser_socket;
 
-#[cfg(not(unix))]
+#[cfg(mobile)]
 mod browser_bridge {
     use serde_json::Value;
 
@@ -15,14 +15,13 @@ mod browser_bridge {
         pub fn new(_replies: std::sync::Arc<crate::Replies>) -> Self {
             Self
         }
-        pub fn set_enabled(&self, _enabled: bool) {}
     }
 
     #[tauri::command]
     pub fn browser_rpc_reply(
         _reply: crate::vault_bridge::VaultRpcReply,
     ) -> Result<(), String> {
-        Err("native messaging is only supported on Linux and macOS".to_string())
+        Err("native messaging is only supported on desktop".to_string())
     }
 
     #[tauri::command]
@@ -33,10 +32,12 @@ mod browser_bridge {
 }
 pub mod config_store;
 mod fs_ops;
+#[cfg(desktop)]
 pub mod keepasshttp;
 pub mod vault_bridge;
 pub mod webdav;
 
+#[cfg(desktop)]
 use keepasshttp::ServerState;
 use std::collections::HashMap;
 use std::sync::mpsc;
@@ -100,6 +101,21 @@ fn window_close(window: tauri::Window) -> Result<(), String> {
     window.close().map_err(|e| e.to_string())
 }
 
+/// Opens a link in the user's default browser. The webview's `window.open`
+/// does not reach the system browser in every Tauri backend, so plugins and
+/// the UI call this command instead.
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    let lower = url.to_ascii_lowercase();
+    let allowed = ["http://", "https://", "ftp://", "mailto:"]
+        .iter()
+        .any(|prefix| lower.starts_with(prefix));
+    if !allowed {
+        return Err("unsupported URL scheme".to_string());
+    }
+    open::that(url).map_err(|e| e.to_string())
+}
+
 /// Waiters for in-flight vault RPC calls.
 pub struct Replies {
     waiters: std::sync::Mutex<HashMap<u64, mpsc::SyncSender<VaultRpcReply>>>,
@@ -129,7 +145,7 @@ impl Replies {
     }
 }
 
-#[cfg(unix)]
+#[cfg(all(unix, not(target_os = "android")))]
 fn setup_browser_bridge(app: &tauri::App) {
     use tauri::Manager;
     let browser_state = std::sync::Arc::new(browser_bridge::BrowserState::new(
@@ -156,8 +172,58 @@ fn setup_browser_bridge(app: &tauri::App) {
     });
 }
 
-#[cfg(not(unix))]
+#[cfg(any(not(unix), target_os = "android"))]
 fn setup_browser_bridge(_app: &tauri::App) {}
+
+#[cfg(desktop)]
+struct TrayReady;
+
+#[cfg(desktop)]
+fn toggle_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_visible().unwrap_or(false) {
+            let _ = window.hide();
+        } else {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }
+}
+
+#[cfg(desktop)]
+fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
+    use tauri::menu::{Menu, MenuItem};
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+
+    let toggle = MenuItem::with_id(app, "toggle", "Show / Hide", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit KeeWeb Next", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&toggle, &quit])?;
+
+    let mut builder = TrayIconBuilder::with_id("main-tray")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "toggle" => toggle_main_window(app),
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_main_window(tray.app_handle());
+            }
+        });
+    if let Some(icon) = app.default_window_icon() {
+        builder = builder.icon(icon.clone());
+    }
+    builder.build(app)?;
+    app.manage(TrayReady);
+    Ok(())
+}
 
 /// Serves the embedded web assets over localhost HTTP.
 ///
@@ -166,8 +232,21 @@ fn setup_browser_bridge(_app: &tauri::App) {}
 /// avoids the custom-scheme quirks entirely; the port is random and bound to
 /// 127.0.0.1, and the server dies with the process.
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
+    let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
+    builder
+        .on_window_event(|window, event| {
+            #[cfg(desktop)]
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main"
+                    && window.app_handle().try_state::<TrayReady>().is_some()
+                {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+            #[cfg(not(desktop))]
+            let _ = (window, event);
+        })
         .on_page_load(|_webview, payload| {
             if std::env::var_os("KEEWEB_LOG_PAGE_LOAD").is_some() {
                 eprintln!("[page-load] {:?} {}", payload.event(), payload.url());
@@ -180,6 +259,7 @@ pub fn run() {
         window_toggle_maximize,
         window_focus,
         window_close,
+        open_url,
         config_store::config_load,
         config_store::config_save,
         browser_bridge::browser_rpc_reply,
@@ -203,14 +283,18 @@ pub fn run() {
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
             )
-            .title("KeeWeb Next")
-            .inner_size(1280.0, 800.0)
-            .min_inner_size(800.0, 600.0);
+            .title("KeeWeb Next");
+            let builder = builder.inner_size(1280.0, 800.0).min_inner_size(800.0, 600.0);
             #[cfg(target_os = "macos")]
             let builder = builder
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true);
             let _window = builder.build().map_err(|e| e.to_string())?;
+
+            #[cfg(desktop)]
+            if let Err(e) = setup_tray(app) {
+                eprintln!("[tray] unavailable: {}", e);
+            }
 
             let handle = app.handle().clone();
             let config_dir = app
@@ -218,6 +302,7 @@ pub fn run() {
                 .app_data_dir()
                 .map(|dir| dir.join("config"))
                 .map_err(|e| e.to_string())?;
+            let keepass_store = config_dir.join("keepasshttp.json");
             let store = std::sync::Arc::new(config_store::ConfigStore::default());
             store.init(config_dir);
             app.manage(config_store::State(store.clone()));
@@ -225,13 +310,13 @@ pub fn run() {
             app.manage(replies.clone());
             setup_browser_bridge(app);
             let vault = WebviewVault::new(handle.clone(), replies);
-            let state = std::sync::Arc::new(ServerState {
-                associations: std::sync::Mutex::new(Default::default()),
-                vault: Box::new(vault),
-            });
+            let state = std::sync::Arc::new(ServerState::load(
+                Box::new(vault),
+                Some(keepass_store),
+            ));
 
-            // The KeePassHTTP endpoint binds 127.0.0.1 only and dies with the
-            // process; associations are equally process-local.
+            // The KeePassHTTP endpoint binds 127.0.0.1 only; paired
+            // clients are loaded from the config directory above.
             let http_handle = handle.clone();
             std::thread::spawn(move || {
                 keepasshttp::serve(state, http_handle);

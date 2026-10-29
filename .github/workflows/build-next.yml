@@ -82,6 +82,8 @@ jobs:
         run: npm ci --allow-git=all --allow-remote=all
       - name: Build web
         run: npm run build:web
+      - name: Prepare native messaging host
+        run: node scripts/prepare-browser-host.mjs
       - name: Build shell
         # the project-pinned tauri-cli (package.json); native build per runner,
         # so bundles land in src-tauri/target/release/bundle

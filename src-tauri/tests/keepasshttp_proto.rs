@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::sync::Mutex;
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
@@ -60,10 +58,7 @@ impl Vault for FakeVault {
 }
 
 fn state(vault: FakeVault) -> ServerState {
-    ServerState {
-        associations: Mutex::new(HashMap::new()),
-        vault: Box::new(vault),
-    }
+    ServerState::load(Box::new(vault), None)
 }
 
 fn aes_encrypt(plain: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8> {

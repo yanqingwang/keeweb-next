@@ -1,0 +1,5 @@
+{
+  "bundle": {
+    "externalBin": ["binaries/keeweb-next-browser-host"]
+  }
+}

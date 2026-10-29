@@ -195,11 +195,66 @@ pub trait Vault: Send + Sync {
     fn database_hash(&self) -> Result<String, &'static str>;
 }
 
-/// Associations are process-local: they live as long as the shell does, so
-/// closing the app forgets every paired client. Nothing is written to disk.
+/// Associations are persisted next to the app config, so a paired browser
+/// extension survives a restart. The file is user-private (0600 on Unix) and
+/// contains only the client id and the shared AES key.
 pub struct ServerState {
     pub associations: Mutex<HashMap<String, Association>>,
     pub vault: Box<dyn Vault>,
+    store_path: Option<std::path::PathBuf>,
+}
+
+impl ServerState {
+    pub fn load(vault: Box<dyn Vault>, store_path: Option<std::path::PathBuf>) -> Self {
+        let mut associations = HashMap::new();
+        if let Some(path) = &store_path {
+            if let Ok(body) = std::fs::read(path) {
+                if let Ok(stored) = serde_json::from_slice::<HashMap<String, String>>(&body) {
+                    for (id, key) in stored {
+                        if let Ok(key) = STANDARD.decode(key) {
+                            if key.len() == 32 {
+                                associations.insert(id.clone(), Association { id, key });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Self {
+            associations: Mutex::new(associations),
+            vault,
+            store_path,
+        }
+    }
+
+    fn persist(&self) {
+        let Some(path) = &self.store_path else {
+            return;
+        };
+        let stored: HashMap<String, String> = self
+            .associations
+            .lock()
+            .expect("associations lock")
+            .iter()
+            .map(|(id, association)| (id.clone(), STANDARD.encode(&association.key)))
+            .collect();
+        let Ok(body) = serde_json::to_vec(&stored) else {
+            return;
+        };
+        if let Some(dir) = path.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        let tmp = path.with_extension("json.tmp");
+        if std::fs::write(&tmp, body).is_err() {
+            return;
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o600));
+        }
+        let _ = std::fs::rename(&tmp, path);
+    }
 }
 
 fn sha1_hex(input: &str) -> String {
@@ -557,6 +612,7 @@ pub fn handle_request(state: &ServerState, request: Request) -> Response {
                 .lock()
                 .expect("associations lock")
                 .insert(id, association.clone());
+            state.persist();
             let (response, _) = plain_response("associate", &hash, &association);
             response
         }

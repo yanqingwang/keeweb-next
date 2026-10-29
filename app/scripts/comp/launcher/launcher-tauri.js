@@ -3,7 +3,7 @@
 // process here, so the Node-backed features (auto-type, native modules,
 // updater, local file storage) report themselves as unsupported rather than
 // failing halfway through a feature.
-import { invoke } from 'util/tauri';
+import { invoke, isTauri } from 'util/tauri';
 
 const noop = () => {};
 
@@ -90,7 +90,11 @@ const Launcher = {
 
     openLink(href) {
         if (/^(http|https|ftp|sftp|mailto):/i.test(href)) {
-            window.open(href, '_blank');
+            if (isTauri) {
+                invoke('open_url', { url: href }).catch(() => window.open(href, '_blank'));
+            } else {
+                window.open(href, '_blank');
+            }
         }
     },
 

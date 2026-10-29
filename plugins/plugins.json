@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-28T08:29:01.812Z",
-  "signature": "wiBB1wj1A+r/k+HciCgy7ffC3lxJcjrhsFtBnTOoyYgPnr7p9g8UIB3X96xYvcpetgbxY/kRqxPWgUUvuCO/5igWSDx3AcmLncMp0ZLivfvvzLQHEfZLzoHCZvCaLbVb5H9euwXbXn1r+5TRsD2av3Os1JtmmoeX6wgUAF7jeU6Gd1OxnQcILA4eJoAAZhL/iuvm4YUBQh9nBH3p8FTaFDQxfCDV6URzQTovp3CkgVo++u9ibnCUVi4Y6CUp2/ovhI7igKLlCP00xhTRYJRk1TF7Hvjdo4LL0pWI8hrcVlpQHJRPgRJx4Mj2U4xCu7V8P1NhApFguM8WVf+2uY5cdQ==",
+  "date": "2026-10-29T13:39:00.227Z",
+  "signature": "WOGEQF2CBNli3Lfc7YznK71XscsrJz96JJZU58Wg7XBfFRmbXHD+vad2X72nfobt5LTDZ8y1MgrNTEYbyF3tPnMNP+cu0QERO8nIoVL25S+CjwxOzZazfabKoKd6rbXjgG+J9hR7kfgx+XE/MU6fsf+Y0UhiS5qzlRLv5d4idwgxs3ZHa6Fmur2C+KyAs4E3/786Ihzm4u3jZ9v4ncI58FBNEXlXhAXPehswx3+HR3bovT9U8DGTRI1Ed+QaoSCNwYmkGwVWGYY0pM4EhgvIC5Mmoeq/117CA7jqyOcySkVfS97nA36TbPSWitip/Oxc4WEcq+Focgv35Y/AIFacnw==",
   "plugins": [
     {
       "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/copy-hotkeys",
@@ -80,7 +80,7 @@
           "url": "https://github.com/yanqingwang"
         },
         "resources": {
-          "js": "wHKo9KcUUvd8aFK2zbqLBqV91AUuITTNJwcrpCO3xJva0TIc0VcUpa0ZKs2tBpexKuJbDbdVIR72sAMs+gJA37T7E6dmdPvRfqG+GEi/wyxCIJ2VAeKHA4ZY7Cv+BgCFnXY5QR3DWJYUOBLwSd8JecfnzD5lfJoBtkgpdMoY+zz/BZ1/NXCPSvNpgyq9oeHbUpn+PBdztN8b3P1lFIOci/I6+fJSPfqODBNaPhmTrtc45FglzaOkLam3vHUTZ8RgtgmMNEeQjo2O/fcMLySZCmpCXs9mZX+/8jQTHPILVYK5vmWZZuFMyx3RReJJR6spTkKuZ/HsoHhrMXktDseOzQ==",
+          "js": "DnRPuvOc16dtxEmYwvgEpbPaeOv+KdAgnHMMW2VRlVcBZ1NDJMxoFOrIkP682JtpyG8jdRnk6NKU35MQBlcUP2XqBgnpVH8mJDF7D9MYm5i7CykoIfbd9BicmSa5wC1p/q+9WqN0zM5fq/tqUTCn8bHQkNvuqrcQ0ul9qze/a4rg0iGDjcyv5L9ZX4jiuxjU4IcwJLNR/EmIbHWwTu2QICmuFKVReSH/nDEPaS83YV3/08Sa6zV8CwAGVBEoT6wC2KrxePPInhF83HNSoxyf8uAA8RjoRLWhdPDK+ZLO9dED5su0JEHeDWwPh6Y7bCc8VBQ5NBP7eeyJSrGD42bMNQ==",
           "css": "DjYN9C5zbluzoB76QdBBAKqIh3TiWj0hs/oBItgl49Avp7MroEpGyur1039tghI58q2sNuEPUgnz9pMFQGivfeWwf1KKpvUaziKIbKW7fkZilVLlaF1KcrqdVaDelaxxVbxuU8CHYYYHG+4zM1diXVIMcCQMvUXD5hmG/P3JfgWasJ3Z7JNOPFeYkeL6R37GYVX+to5NGs5obTiYOrgOS1k1CesjBJ5KBfQLPkTH/B2oPVOvXGVyPI8lV+05AL+yLCDE3P2s8E/UUKnLrWpXE9cw7LJKBBAs/qmaOQzVvgiMN+IJAsZiEpj0nJHX35/ygoaWeh/rG4jkx+vpva/S5g=="
         },
         "license": "MIT",

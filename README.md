@@ -92,11 +92,11 @@ flowchart LR
 
 ## 尚未完成 / 路线图
 
-* 手机端：Tauri 2 的 Android/iOS 目标（图标已生成），UI 需要一轮移动端适配。
-* 关联密钥的持久化（当前为进程内存储，重启后需重新配对；设计上不落盘）。
+* 手机端：Tauri 2 的 Android/iOS 目标（图标已生成），UI 需要一轮移动端适配；
+  与桌面壳差异较大，暂未进入本分支的发布流程。
 * 自动填充浏览器插件的官方对接（KeeWeb Connect 扩展已兼容 web 模式 postMessage；
   KeePassHTTP 端点已可用）。
-* 自动更新、托盘、全局快捷键、auto-type：Electron 时代功能，暂未迁移。
+* 自动更新、全局快捷键、auto-type：Electron 时代功能，暂未迁移。
 
 ## 浏览器集成
 
@@ -104,14 +104,19 @@ flowchart LR
 
 ### KeePassXC-Browser（推荐，native messaging）
 
-壳启动时为 Chrome/Chromium/Edge/Brave/Vivaldi 与 Firefox 写入
-`org.keepassxc.keepassxc_browser` 的主机清单，指向
-`/usr/bin/keeweb-next-browser-host`（macOS 指向
-`KeeWeb Next.app/Contents/MacOS/keeweb-next-browser-host`）；扩展按常规流程连接即可。
+壳启动时为主流浏览器写入 `org.keepassxc.keepassxc_browser` 的主机清单，
+指向随包分发的 `keeweb-next-browser-host` 助手；扩展按常规流程连接即可。
 若机器上同时装了 KeePassXC，同名清单会被最后安装的一方覆盖。
-清单位置按平台区分：Linux 是 `~/.config/<浏览器>/NativeMessagingHosts` 与
-`~/.mozilla/native-messaging-hosts`，macOS 统一在
-`~/Library/Application Support/{<浏览器>,Mozilla}/…`。
+
+* Linux：`~/.config/<浏览器>/NativeMessagingHosts` 与
+  `~/.mozilla/native-messaging-hosts`。
+* macOS：`~/Library/Application Support/{<浏览器>,Mozilla}/…`。
+* Windows：清单写到 `%APPDATA%\KeeWeb Next\native-hosts`，并在
+  `HKCU\Software\{Google\Chrome,Chromium,Microsoft\Edge,BraveSoftware\Brave-Browser,Vivaldi}\NativeMessagingHosts`
+  与 `HKCU\Software\Mozilla\NativeMessagingHosts` 注册同一个 host 名。
+
+助手和主程序通过 `127.0.0.1` 上的随机端口通信；端口与一次性 token 写在
+仅当前用户可读的 endpoint 文件里（Unix 0600），浏览器进程只负责转发消息。
 
 * 关联（association）与 `get-databasehash` 不要求已解锁数据库，和 KeePassXC 一致，
   扩展首次连接即可完成关联；只有真正读写条目的动作才要求数据库已解锁。
@@ -142,8 +147,8 @@ flowchart LR
   由扩展保存的登录会标记文件已修改并立即走正常保存/同步流程写入 WebDAV。
 * 其他设备写入的新数据需要应用先完成同步（打开文件、保存或自动保存时触发）；
   扩展不会在每次查询时强制拉取远端。
-* KeePassHTTP 的关联密钥保存在壳进程内，重启应用后需重新确认一次；
-  KeePassXC-Browser 的授权决定已可持久化（见上）。
+* KeePassHTTP 的关联密钥持久化在应用配置目录的 `keepasshttp.json`（Unix 0600），
+  重启后无需重新配对；KeePassXC-Browser 的授权决定同样可持久化。
 
 ## 本机 HTTP API（KeePassHTTP 兼容）
 
@@ -156,8 +161,15 @@ flowchart LR
   全部使用共享密钥 + 每请求随机 Nonce 加密，Verifier 校验防重放。
 * 数据库标识（Hash）随每个响应返回，插件可感知数据库更换。
 * 安全边界：只绑 127.0.0.1、非回环连接直接丢弃、请求体 ≤1MB、
-  读写超时 30s；关联密钥仅存进程内存，应用退出即失效；
-  `get-logins` 只在库解锁时有结果，锁定时明确报 "database is locked"。
+  读写超时 30s；关联密钥写在应用配置目录的 `keepasshttp.json`（Unix 0600），
+  应用退出后仍然有效；`get-logins` 只在库解锁时有结果，锁定时明确报
+  "database is locked"。
+
+## 托盘
+
+桌面版启动后常驻系统托盘：左键点击显示/隐藏主窗口，右键菜单可以显示/隐藏或退出；
+关闭主窗口时默认隐藏到托盘，而不是退出。Linux 需要 `libayatana-appindicator3`，
+CI 的 Linux 依赖步骤已经安装。
 
 ## 构建
 
@@ -171,6 +183,7 @@ npm ci --allow-git=all --allow-remote=all   # 本机 npmrc 禁 git 源时需要
 npm run build:web                            # 产物在 dist/
 
 # WebView 壳
+node scripts/prepare-browser-host.mjs        # 生成 externalBin 助手
 npm run build:shell                          # src-tauri/target/release/keeweb-next
 npm run dev:shell                            # 开发模式（先 npm run dev 起 :8085）
 
@@ -196,7 +209,7 @@ npm test                                     # 浏览器测试（需要 CHROME_B
   （`.github/workflows/build-next.yml`；Intel 版省略以省 macOS 分钟数）。
 
 未迁移的 macOS 专属能力：Touch ID / 硬件加密存储（原 Electron
-hardware-crypto）、auto-type、全局快捷键、托盘。
+hardware-crypto）、auto-type、全局快捷键。
 
 USB 设备 / YubiKey 同样未实现（原实现依赖 node-usb-detection、
 node-yubikey-chalresp 与 `ykman` CLI），设置中的 Devices 页面已隐藏。

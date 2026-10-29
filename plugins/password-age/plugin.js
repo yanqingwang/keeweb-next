@@ -102,7 +102,15 @@ function install() {
     };
     Events.on('entry-selected', entryHandler);
     observer = new MutationObserver(onMutations);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // The list virtualizes rows: scrolling reuses an existing `.list__item`
+    // and only changes its id, which is an attribute mutation, not a child
+    // list mutation. Observing ids keeps the age marks in sync.
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['id']
+    });
     scheduleRefresh();
 }
 

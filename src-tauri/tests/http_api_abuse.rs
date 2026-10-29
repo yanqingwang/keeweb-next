@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::sync::Mutex;
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
@@ -22,10 +20,7 @@ impl Vault for AllowVault {
 }
 
 fn state() -> ServerState {
-    ServerState {
-        associations: Mutex::new(HashMap::new()),
-        vault: Box::new(AllowVault),
-    }
+    ServerState::load(Box::new(AllowVault), None)
 }
 
 fn parse(body: serde_json::Value) -> Request {

@@ -40,7 +40,7 @@ jobs:
         run: npm ci --allow-git=all --allow-remote=all
       - name: Build
         run: npm run build:web
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: keeweb-next-web
           path: dist/
@@ -89,7 +89,7 @@ jobs:
       - name: Test (Rust)
         if: runner.os != 'Windows'
         run: cargo test --manifest-path src-tauri/Cargo.toml
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: keeweb-next-${{ matrix.os }}
           path: src-tauri/target/release/bundle/**
@@ -111,7 +111,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Collect assets

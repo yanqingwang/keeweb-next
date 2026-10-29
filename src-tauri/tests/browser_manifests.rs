@@ -60,12 +60,6 @@ fn the_firefox_target_matches_what_the_extension_looks_for() {
     let targets = manifest_targets(Path::new("/Users/tester"));
     let firefox: Vec<_> = targets.iter().filter(|t| t.firefox).collect();
     assert_eq!(firefox.len(), 1, "expected exactly one firefox target");
-    assert_eq!(
-        firefox[0].dir.file_name().unwrap(),
-        std::ffi::OsStr::new("NativeMessagingHosts"),
-        "firefox manifest dir must be NativeMessagingHosts on macOS",
-    );
-
     #[cfg(target_os = "macos")]
     assert_eq!(
         firefox[0].dir,
@@ -165,6 +159,11 @@ fn installing_then_disabling_round_trips_the_manifest() {
     let home = std::env::temp_dir().join(format!("kw-manifest-test-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&home);
     std::fs::create_dir_all(&home).unwrap();
+
+    // On Linux the install decision keys off the Firefox profile directory;
+    // macOS uses the application bundle instead (not available in a temp HOME).
+    #[cfg(not(target_os = "macos"))]
+    std::fs::create_dir_all(home.join(".mozilla")).unwrap();
 
     // host_binary_path() resolves the helper next to current_exe, which under
     // `cargo test` is the test harness itself; pin it instead.

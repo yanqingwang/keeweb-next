@@ -10,6 +10,7 @@ const triple = execFileSync('rustc', ['-vV'], { encoding: 'utf8' }).match(
     /^host: (.+)$/m
 )[1];
 const exe = process.platform === 'win32' ? '.exe' : '';
+const helperTarget = join(root, 'src-tauri', 'target', 'browser-host');
 
 execFileSync(
     'cargo',
@@ -17,6 +18,8 @@ execFileSync(
         'build',
         '--manifest-path',
         join(root, 'src-tauri', 'Cargo.toml'),
+        '--target-dir',
+        helperTarget,
         '--release',
         '--bin',
         'keeweb-next-browser-host'
@@ -26,7 +29,7 @@ execFileSync(
 
 const out = join(root, 'src-tauri', 'binaries');
 mkdirSync(out, { recursive: true });
-const source = join(root, 'src-tauri', 'target', 'release', `keeweb-next-browser-host${exe}`);
+const source = join(helperTarget, 'release', `keeweb-next-browser-host${exe}`);
 const target = join(out, `keeweb-next-browser-host-${triple}${exe}`);
 copyFileSync(source, target);
 if (process.platform !== 'win32') {

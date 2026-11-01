@@ -1,7 +1,7 @@
 pkgbase = keeweb-next
 	pkgdesc = KeeWeb as a web app, with an optional Tauri webview shell (WebDAV without CORS limits)
 	pkgver = 0.1.3
-	pkgrel = 2
+	pkgrel = 3
 	url = https://github.com/yanqingwang/keeweb-next
 	arch = x86_64
 	arch = aarch64

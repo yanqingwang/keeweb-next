@@ -7,16 +7,15 @@
 //! Unix, so other local users cannot read the token.
 #![allow(dead_code)]
 
-
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
-fn uid() -> u32 {
+fn uid() -> Option<u32> {
     std::process::Command::new("id")
         .arg("-u")
         .output()
         .ok()
         .and_then(|out| String::from_utf8_lossy(&out.stdout).trim().parse().ok())
-        .unwrap_or(1000)
 }
 
 fn private_dir() -> PathBuf {
@@ -28,7 +27,20 @@ fn private_dir() -> PathBuf {
     if let Some(base) = std::env::var_os("LOCALAPPDATA") {
         return PathBuf::from(base).join("KeeWeb Next").join("browser");
     }
-    std::env::temp_dir().join(format!("keeweb-next-{}", uid()))
+    // The fallback used to be a fixed path under the temporary directory, which
+    // any local user can pre-create and then own. The home directory is the
+    // only location that reliably belongs to the user running this app.
+    if let Some(base) = std::env::var_os("XDG_STATE_HOME") {
+        return PathBuf::from(base).join("keeweb-next").join("browser");
+    }
+    if let Some(home) = std::env::var_os("HOME") {
+        return PathBuf::from(home)
+            .join(".local")
+            .join("state")
+            .join("keeweb-next")
+            .join("browser");
+    }
+    std::env::temp_dir().join(format!("keeweb-next-{}", uid().unwrap_or(1000)))
 }
 
 pub fn endpoint_path() -> PathBuf {
@@ -42,6 +54,10 @@ pub fn endpoint_path() -> PathBuf {
 }
 
 /// Creates the endpoint directory and restricts it to the current user.
+///
+/// The mode change is unconditional and its error is returned: only the owner
+/// of a directory may chmod it, so a directory planted by another local user
+/// fails here instead of being trusted.
 pub fn prepare_dir(path: &Path) -> std::io::Result<()> {
     let Some(dir) = path.parent() else {
         return Ok(());
@@ -50,11 +66,23 @@ pub fn prepare_dir(path: &Path) -> std::io::Result<()> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = std::fs::metadata(dir)?.permissions();
-        if perms.mode() & 0o077 != 0 {
-            perms.set_mode(0o700);
-            std::fs::set_permissions(dir, perms)?;
+        // create_dir_all follows a symlink, so the check has to look at the
+        // link itself before the chmod lands somewhere else
+        let meta = std::fs::symlink_metadata(dir)?;
+        if meta.file_type().is_symlink() || !meta.is_dir() {
+            return Err(std::io::Error::other(
+                "endpoint directory is not a plain directory",
+            ));
         }
+        if let Some(uid) = uid() {
+            use std::os::unix::fs::MetadataExt;
+            if meta.uid() != uid {
+                return Err(std::io::Error::other(
+                    "endpoint directory belongs to another user",
+                ));
+            }
+        }
+        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
     }
     Ok(())
 }
@@ -62,20 +90,33 @@ pub fn prepare_dir(path: &Path) -> std::io::Result<()> {
 /// Publishes the listening port and token for the helper.
 pub fn write_endpoint(path: &Path, port: u16, token: &str) -> std::io::Result<()> {
     prepare_dir(path)?;
-    let body = serde_json::json!({ "port": port, "token": token });
+    let body = serde_json::to_vec(&serde_json::json!({ "port": port, "token": token }))
+        .map_err(std::io::Error::other)?;
     let tmp = path.with_extension("json.tmp");
-    let body = serde_json::to_vec(&body).map_err(std::io::Error::other)?;
-    std::fs::write(&tmp, body)?;
+    let _ = std::fs::remove_file(&tmp);
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o600))?;
+        use std::os::unix::fs::OpenOptionsExt;
+        // the file is ours and 0600 from the first byte; a pre-planted
+        // symlink makes create_new fail instead of redirecting the token
+        options.mode(0o600);
     }
+    let mut file = options.open(&tmp)?;
+    file.write_all(&body)?;
+    file.sync_all()?;
+    drop(file);
     std::fs::rename(&tmp, path)
 }
 
 /// Reads the endpoint published by a running app.
 pub fn read_endpoint(path: &Path) -> Option<(u16, String)> {
+    // never follow a link: the helper must read the file the app wrote
+    let meta = std::fs::symlink_metadata(path).ok()?;
+    if !meta.file_type().is_file() {
+        return None;
+    }
     let body = std::fs::read(path).ok()?;
     let value: serde_json::Value = serde_json::from_slice(&body).ok()?;
     let port = value.get("port")?.as_u64()? as u16;

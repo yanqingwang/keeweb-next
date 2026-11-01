@@ -11,7 +11,7 @@
 //! Only the user can reach the port: it binds 127.0.0.1 with a random port and
 //! requires a token read from a 0600 endpoint file.
 
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -30,6 +30,27 @@ pub const HOST_NAME: &str = "org.keepassxc.keepassxc_browser";
 const REPLY_TIMEOUT: Duration = Duration::from_secs(120);
 const CHROME_EXTENSION_ID: &str = "oboonakemofpalcgghocfoadofidjkkk";
 const FIREFOX_EXTENSION_ID: &str = "keepassxc-browser@keepassxc.org";
+
+/// One frame from the browser is a JSON request; anything larger is refused
+/// instead of buffered without limit.
+const MAX_INCOMING_LINE: u64 = 8 * 1024 * 1024;
+/// Loopback is reachable by every local user, so threads are capped.
+const MAX_CONNECTIONS: usize = 16;
+
+/// Constant-time comparison: a short-circuiting `!=` leaks the token prefix
+/// through timing. The line ends with a newline, which is not part of it.
+fn token_matches(received: &str, expected: &str) -> bool {
+    let received = received.trim_end_matches(['\r', '\n']).as_bytes();
+    let expected = expected.as_bytes();
+    if received.len() != expected.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (a, b) in received.iter().zip(expected) {
+        diff |= a ^ b;
+    }
+    diff == 0
+}
 
 #[derive(Serialize, Clone)]
 pub struct BrowserRpcCall {
@@ -103,14 +124,21 @@ pub fn serve(app: tauri::AppHandle, state: Arc<BrowserState>) {
         return;
     }
     let mut connection_id = 0u64;
+    let active = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
+        if active.load(Ordering::Relaxed) >= MAX_CONNECTIONS {
+            continue;
+        }
+        active.fetch_add(1, Ordering::Relaxed);
         connection_id += 1;
         let app = app.clone();
         let state = state.clone();
         let token = token.clone();
+        let active = active.clone();
         std::thread::spawn(move || {
-            serve_connection(stream, token, connection_id, app, state)
+            serve_connection(stream, token, connection_id, app, state);
+            active.fetch_sub(1, Ordering::Relaxed);
         });
     }
 }
@@ -129,11 +157,26 @@ fn serve_connection(
     let mut writer = write_stream;
     let mut reader = BufReader::new(stream);
     let mut auth = String::new();
-    if reader.read_line(&mut auth).is_err() || auth.trim() != token {
+    // the token line is small; a longer one is not this helper and is dropped
+    // before it can grow the buffer
+    match (&mut reader).take(4096).read_line(&mut auth) {
+        Ok(0) | Err(_) => return,
+        Ok(_) => {}
+    }
+    if !token_matches(&auth, &token) {
         return;
     }
-    for line in reader.lines() {
-        let Ok(line) = line else { break };
+    let mut line = String::new();
+    loop {
+        line.clear();
+        let read = match (&mut reader).take(MAX_INCOMING_LINE).read_line(&mut line) {
+            Ok(0) => break,
+            Ok(read) => read,
+            Err(_) => break,
+        };
+        if read as u64 >= MAX_INCOMING_LINE {
+            break; // oversized frame: drop the connection
+        }
         let Ok(request) = serde_json::from_str::<Value>(&line) else {
             continue;
         };
@@ -497,5 +540,20 @@ fn write_manifest(dir: &std::path::Path, manifest: &Value) {
     let body = serde_json::to_vec_pretty(manifest).unwrap_or_default();
     if std::fs::write(&path, body).is_err() {
         eprintln!("[browser-bridge] cannot write {:?}", path);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::token_matches;
+
+    #[test]
+    fn token_comparison_ignores_only_the_line_ending() {
+        let token = "c2VjcmV0LXRva2Vu";
+        assert!(token_matches(&format!("{}\n", token), token));
+        assert!(token_matches(&format!("{}\r\n", token), token));
+        assert!(!token_matches("", token));
+        assert!(!token_matches("c2VjcmV0LXRva2VuXG4=", token));
+        assert!(!token_matches("c2VjcmV0LXRva2Vu-", token));
     }
 }

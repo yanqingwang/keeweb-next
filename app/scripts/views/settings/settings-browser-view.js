@@ -24,6 +24,7 @@ class SettingsBrowserView extends View {
         'click .settings__browser-btn-forget-connect': 'forgetRememberedConnect',
         'change .settings__browser-focus-if-locked': 'changeFocusIfLocked',
         'change .settings__browser-focus-if-empty': 'changeFocusIfEmpty',
+        'change .settings__browser-passkeys-localhost': 'changePasskeysLocalhost',
         'change .settings__browser-session-ask-get': 'changeSessionAskGet',
         'change .settings__browser-session-ask-save': 'changeSessionAskSave',
         'change .settings__browser-session-file-check': 'changeSessionFileAccess',
@@ -42,6 +43,7 @@ class SettingsBrowserView extends View {
             icon: Features.browserIcon,
             focusIfLocked: AppSettingsModel.extensionFocusIfLocked,
             focusIfEmpty: AppSettingsModel.extensionFocusIfEmpty,
+            passkeysAllowLocalhost: AppSettingsModel.extensionPasskeysAllowLocalhost,
             sessions: BrowserExtensionConnector.sessions.map((session) => {
                 const fileAccess = this.getSessionFileAccess(session);
                 return {
@@ -191,6 +193,11 @@ class SettingsBrowserView extends View {
 
     changeFocusIfEmpty(e) {
         AppSettingsModel.extensionFocusIfEmpty = e.target.checked;
+        this.render();
+    }
+
+    changePasskeysLocalhost(e) {
+        AppSettingsModel.extensionPasskeysAllowLocalhost = e.target.checked;
         this.render();
     }
 

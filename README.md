@@ -128,6 +128,38 @@ flowchart LR
 * 「在返回密码前询问」的选项含义：**总是询问（即使只匹配一个条目）** 会在每个网站都
   弹出选条目的框；默认「仅在匹配到多个条目时」则单个匹配直接填充、完全不弹窗。
 
+#### 通行密钥（passkey / WebAuthn）
+
+应用报告的 KeePassXC 版本是 `2.7.7`，这是扩展判断「可以发哪些动作」的依据
+（`KnownAppVersions.KeePassXC`）。支持范围：
+
+| 动作 | 说明 |
+| --- | --- |
+| `passkeys-register` | 网站注册通行密钥：应用生成 P-256 密钥对，签名后把公钥交给网站 |
+| `passkeys-get` | 网站用通行密钥登录：应用用保存的私钥签名 challenge |
+
+* 私钥、credential ID、user handle 与依赖方存进独立条目（标题 `<站点> (Passkey)`），
+  字段沿用 KeePassXC 的 `KPEX_PASSKEY_*` 命名，因此**同一个数据库在 KeePassXC 与
+  KeePassXC-Browser 之间可互认**；私钥与 credential ID 是受保护字段。
+* 新建的通行密钥条目放在 `Browser` 分组（没有就创建），与密码条目同一个地方。
+  这些条目不会出现在 `get-logins` 结果或字段选择框里：它们没有密码，
+  凭证材料只经由通行密钥动作输出。
+* 注册与登录都要在应用里确认一次；同一依赖方有多个通行密钥时改为弹出条目选择框。
+  确认框显示经过校验的依赖方与标准化后的页面来源，不显示页面自报的站点名。
+  同一时刻只允许一个确认框：页面并发触发多个 `get()` 时，后到的请求直接拒绝，
+  避免堆叠的确认框让一次点击批准多次签名。确认框关闭后会重新解析条目，
+  确认期间被删除、禁用或移入回收站的通行密钥不会再签名。
+* 校验在应用侧完成，不信任页面：默认只接受 `https` 来源（可在
+  设置 → 浏览器集成 里放开 `http://localhost`），`rpId` 必须是来源的有效域名或
+  它的**可注册**父域；是否可注册由公共后缀列表（`tldts`，含 `github.io`、
+  `s3.amazonaws.com` 一类的私有后缀）判定，因此租户站点不能冒充同一后缀下的
+  其他站点。裸 TLD、公共后缀与 IP 字面量一律拒绝，域名末尾的点会先归一化。
+  challenge 至少 16 字节、user id 1–64 字节。
+* 断言**不置 UV 位**：用户按下「允许」只是 presence，不是生物特征/PIN 验证。
+  站点要求 `userVerification: 'required'` 时会明确报错，而不是谎报已验证。
+* 只实现 ES256（P-256 + SHA-256）与 `fmt: none` 的 attestation。要求
+  `attestation: direct`、或只提供 RS256/EdDSA 的站点无法使用。
+
 ### 自带扩展（KeeWeb Connect 协议）
 
 * `browser-extension/`（Manifest V3，Chrome/Edge/Chromium；Firefox 用
@@ -158,12 +190,16 @@ flowchart LR
 * `associate`：插件提交 256-bit AES 密钥，**webview 内弹窗人工确认**后才会保存；
   返回的 Id 是密钥的 SHA-1。
 * `test-associate` / `get-logins` / `get-logins-count` / `set-login`：
-  全部使用共享密钥 + 每请求随机 Nonce 加密，Verifier 校验防重放。
+  全部使用共享密钥 + 每请求随机 Nonce 加密；每个已接受的 Verifier 会记入
+  10 分钟的重放缓存，重复提交同一次请求会被拒绝。
 * 数据库标识（Hash）随每个响应返回，插件可感知数据库更换。
-* 安全边界：只绑 127.0.0.1、非回环连接直接丢弃、请求体 ≤1MB、
-  读写超时 30s；关联密钥写在应用配置目录的 `keepasshttp.json`（Unix 0600），
-  应用退出后仍然有效；`get-logins` 只在库解锁时有结果，锁定时明确报
-  "database is locked"。
+* 安全边界：只绑 127.0.0.1、非回环连接直接丢弃；**任何网页都读不到响应** ——
+  返回头不再有 `Access-Control-Allow-Origin`，`Origin` 为 `http(s)://` 或 `null`
+  的请求（即浏览器页面）、`Host` 不是 `127.0.0.1`/`localhost` 的请求（DNS
+  rebinding）、非 `POST` 或非 `application/json` 的请求一律拒绝。请求体 ≤1MB、
+  读写超时 30s、并发连接上限 16。关联密钥写在应用配置目录的
+  `keepasshttp.json`（Unix 0600），应用退出后仍然有效；`get-logins` 只在库解锁时
+  有结果，锁定时明确报 "database is locked"。
 
 ## 托盘
 

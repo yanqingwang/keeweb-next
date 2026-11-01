@@ -4,6 +4,7 @@ import { Keys } from 'const/keys';
 import { Scrollable } from 'framework/views/scrollable';
 import template from 'templates/select/select-entry-field.hbs';
 import { PasswordPresenter } from 'util/formatting/password-presenter';
+import { isPasskeyFieldName } from 'comp/extension/passkeys';
 
 class SelectEntryFieldView extends View {
     parent = 'body';
@@ -57,16 +58,22 @@ class SelectEntryFieldView extends View {
     }
 
     getFields(entry) {
-        return Object.entries(entry.getAllFields())
-            .map(([field, value]) => ({
-                field,
-                value
-            }))
-            .filter(({ value }) => value)
-            .map(({ field, value }) => ({
-                field,
-                value: value.isProtected ? PasswordPresenter.present(value.length) : value
-            }));
+        return (
+            Object.entries(entry.getAllFields())
+                // passkey credential material is not a user-facing field: the
+                // private key and the credential id belong to the passkey actions
+                // only, so they never show up in a field picker
+                .filter(([field]) => !isPasskeyFieldName(field))
+                .map(([field, value]) => ({
+                    field,
+                    value
+                }))
+                .filter(({ value }) => value)
+                .map(({ field, value }) => ({
+                    field,
+                    value: value.isProtected ? PasswordPresenter.present(value.length) : value
+                }))
+        );
     }
 
     upPressed(e) {

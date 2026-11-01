@@ -63,6 +63,21 @@ flowchart LR
 
 ## Done (changes relative to upstream)
 
+* Passkeys (WebAuthn) for KeePassXC-Browser: `passkeys-register` and
+  `passkeys-get`, stored in entries using the KeePassXC `KPEX_PASSKEY_*`
+  field names so one database works in both apps. The app reports KeePassXC
+  `2.7.7` (the release the extension gates passkeys on) and creates ES256
+  credentials with `fmt: none` attestation. Origin, RP ID and challenge are
+  validated app-side: https only (`http://localhost` is opt-in and then works),
+  RP ID must be the origin's effective domain or its registrable parent — the
+  public suffix list (`tldts`, including private suffixes such as `github.io`)
+  decides that, and bare TLDs, public suffixes and IP literals are refused.
+  Assertions never set the UV bit: a click on "Allow" is presence, not
+  verification, so sites asking for `userVerification: 'required'` get an
+  explicit error. Confirmation dialogs are serialised, the chosen entry is
+  re-resolved after the prompt, and passkey entries are hidden from
+  `get-logins`, the field picker and `set-login`.
+
 * Removed `desktop/`, Electron 13 and every electron/grunt packaging task;
   `package.json` no longer carries Electron, native-modules or
   native-messaging-host.
@@ -104,14 +119,19 @@ The shell listens on `127.0.0.1:19455` and speaks the KeePassHTTP protocol
   confirmation dialog** and only an approval stores it. The returned Id is
   the SHA-1 of the key.
 * `test-associate` / `get-logins` / `get-logins-count` / `set-login`: all
-  encrypted with the shared key and a per-request random nonce; the Verifier
-  check rejects replays.
+  encrypted with the shared key and a per-request random nonce; each accepted
+  Verifier is remembered for ten minutes, so a replayed request is refused.
 * Every response carries the database identity (`Hash`), so extensions can
   detect a database change.
 * Security boundaries: loopback binding only (non-loopback connections are
-  dropped before a handshake), request bodies ≤1 MB, 30-second read/write
-  timeouts, associations held in process memory only, and `get-logins`
-  answers "database is locked" while the vault is locked.
+  dropped before a handshake); no response is readable by a web page — the
+  `Access-Control-Allow-Origin` header is gone and requests whose `Origin` is
+  `http(s)://` or `null` (i.e. pages), whose `Host` is not `127.0.0.1` /
+  `localhost` (DNS rebinding), or that are not `POST` `application/json` are
+  rejected. Request bodies ≤1 MB, 30-second read/write timeouts, at most 16
+  concurrent connections. Associations live in `keepasshttp.json` in the app
+  config directory (0600 on Unix) and survive restarts; `get-logins` answers
+  "database is locked" while the vault is locked.
 
 ## Build
 
@@ -203,7 +223,8 @@ Email: <wangyantsing@qq.com>
   master password and key file are never written to disk.
 * The shell's `webdav_request` allows only the methods WebDAV needs and only
   http/https; it is not a generic proxy.
-* The HTTP API binds `127.0.0.1` only, uses the KeePassHTTP pairing crypto, and
-  requires explicit confirmation for the first connection.
+* The HTTP API binds `127.0.0.1` only, ignores requests that carry a web-page
+  `Origin` or a non-loopback `Host`, uses the KeePassHTTP pairing crypto with
+  a replay cache, and requires explicit confirmation for the first connection.
 * MIT, same as upstream; upstream docs live in
   [docs/README.upstream.md](docs/README.upstream.md).

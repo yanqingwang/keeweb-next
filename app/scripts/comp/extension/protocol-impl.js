@@ -17,6 +17,20 @@ import { Timeouts } from 'const/timeouts';
 import { SelectEntryView } from 'views/select/select-entry-view';
 import { SelectEntryFieldView } from 'views/select/select-entry-field-view';
 import { SelectEntryFilter } from 'comp/app/select-entry-filter';
+import { SearchResultCollection } from 'collections/search-result-collection';
+import {
+    Field as PasskeyField,
+    assertCredential,
+    checkChallenge,
+    checkUserId,
+    effectiveDomainOf,
+    hasPasskeyField,
+    isOriginAllowed,
+    isPasskeyFieldName,
+    normalizeOrigin,
+    registerCredential,
+    validateRpId
+} from 'comp/extension/passkeys';
 
 const KeeWebAssociationId = 'KeeWeb';
 const KeeWebHash = '398d9c782ec76ae9e9877c2321cbda2b31fc6d18ccf0fed5ca4bd746bab4d64a'; // sha256('KeeWeb')
@@ -25,6 +39,9 @@ const DefaultExtensionGroupName = 'Browser';
 const ExtensionGroupNames = new Set(['KeePassXC-Browser Passwords', DefaultExtensionGroupName]);
 // a page with more matches than this needs the extension's own search anyway
 const KeePassXcEntryLimit = 30;
+
+// Actions whose payload is credential material: never echoed to the console
+const PasskeyActions = new Set(['passkeys-register', 'passkeys-get']);
 
 const Errors = {
     noOpenFiles: {
@@ -35,9 +52,31 @@ const Errors = {
         message: Locale.extensionErrorUserRejected,
         code: '6'
     },
-    noMatches: {
-        message: Locale.extensionErrorNoMatches,
+    // passkey codes are the ones KeePassXC-Browser expects, so the extension
+    // can tell "nothing saved" from "the user said no"
+    passkeyNoCredentials: {
+        message: Locale.extensionPasskeyNoCredentials,
         code: '15'
+    },
+    passkeyExcluded: {
+        message: Locale.extensionPasskeyExcluded,
+        code: '21'
+    },
+    passkeyOriginNotAllowed: {
+        message: Locale.extensionPasskeyOriginNotAllowed,
+        code: '26'
+    },
+    passkeyDomainMismatch: {
+        message: Locale.extensionPasskeyDomainMismatch,
+        code: '28'
+    },
+    passkeyUnknown: {
+        message: Locale.extensionPasskeyUnknownError,
+        code: '31'
+    },
+    passkeyUserVerificationRequired: {
+        message: Locale.extensionPasskeyUserVerificationRequired,
+        code: '31'
     }
 };
 
@@ -104,7 +143,11 @@ function decryptRequest(request) {
     const json = new TextDecoder().decode(data);
     const payload = JSON.parse(json);
 
-    logger.debug('Extension -> KeeWeb -> (decrypted)', payload);
+    // credential ids, challenges and user handles are the lookup keys for a
+    // passkey; they do not belong in a developer console
+    if (payload && !PasskeyActions.has(payload.action)) {
+        logger.debug('Extension -> KeeWeb -> (decrypted)', payload);
+    }
 
     if (!payload) {
         throw new Error('Empty request payload');
@@ -117,7 +160,9 @@ function decryptRequest(request) {
 }
 
 function encryptResponse(request, payload) {
-    logger.debug('KeeWeb -> Extension (decrypted)', payload);
+    if (!PasskeyActions.has(request.action)) {
+        logger.debug('KeeWeb -> Extension (decrypted)', payload);
+    }
 
     const nonceBytes = kdbxweb.ByteUtils.base64ToBytes(request.nonce);
     incrementNonce(nonceBytes);
@@ -263,6 +308,28 @@ function alertWithTimeout(config) {
     });
 }
 
+// Passkey failures must travel encrypted like any other payload: the
+// extension treats an unencrypted error as "no answer" and reports every
+// failure as a cancelled request, so the page could not tell "nothing saved"
+// from "the user said no".
+async function passkeyResponse(request, run) {
+    let response;
+    let error;
+    try {
+        response = await run();
+    } catch (e) {
+        if (!e.code) {
+            logger.error(`Error in passkey handler ${request.action}`, e);
+        }
+        error = { errorCode: +(e.code || Errors.passkeyUnknown.code) };
+    }
+    return encryptResponse(request, {
+        success: 'true',
+        version: getVersion(request),
+        ...(error ? { response: error } : { response })
+    });
+}
+
 function getAvailableFiles(request) {
     const client = getClient(request);
     if (!client.permissions) {
@@ -283,6 +350,183 @@ function getAvailableFiles(request) {
 
 function getVersion(request) {
     return isKeePassXcBrowser(request) ? KnownAppVersions.KeePassXC : RuntimeInfo.version;
+}
+
+function fieldText(entry, field) {
+    const value = entry.getFieldValue(field);
+    if (!value) {
+        return '';
+    }
+    return value.isProtected ? value.getText() : value + '';
+}
+
+// Same, but never decrypts: used to test whether a field is present without
+// pulling every stored private key into memory.
+function hasFieldText(entry, field) {
+    const value = entry.getFieldValue(field);
+    if (!value) {
+        return false;
+    }
+    return value.isProtected ? value.byteLength > 0 : !!value;
+}
+
+function findEntryByUuid(files, uuidHex) {
+    const id = kdbxweb.ByteUtils.bytesToBase64(kdbxweb.ByteUtils.hexToBytes(uuidHex));
+    for (const file of files) {
+        const entry = file.getEntry(file.subId(id));
+        if (entry) {
+            return entry;
+        }
+    }
+    return undefined;
+}
+
+function isPasskeyEntry(entry) {
+    // any KPEX_PASSKEY_* field, in any capitalisation: the same entry must be
+    // treated the same way by every channel
+    return hasPasskeyField(entry);
+}
+
+// Entries in the recycle bin are deleted as far as the user is concerned: a
+// deleted passkey must not keep signing. The recycle bin is a normal group, so
+// walking the parent chain is what tells "deleted" from "still in use".
+function isInTrash(file, entry) {
+    return groupIsInTrash(file, entry.group);
+}
+
+// Only an explicit "no recycle bin" disables the check. kdbxweb leaves
+// recycleBinEnabled undefined when the node is absent, and a bin that exists
+// without that flag still holds deleted entries.
+function groupIsInTrash(file, group) {
+    const trashUuid = file.db.meta.recycleBinUuid;
+    if (file.db.meta.recycleBinEnabled === false || !trashUuid) {
+        return false;
+    }
+    const trashId = file.subId(trashUuid.id);
+    for (let node = group; node; node = node.parentGroup) {
+        if (node.id === trashId) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Passkeys live in their own entries: the relying party and the private key
+// are per-credential, and mixing them into a password entry makes both harder
+// to read.
+//
+// Entries are walked with the normal search filter, not includeDisabled: a
+// passkey the user disabled must not keep signing. That filter already skips
+// the entry-templates group; the recycle bin is excluded below.
+function findPasskeyEntries(files, rpId, allowedIds) {
+    const wanted = new Set(allowedIds || []);
+    const matches = [];
+    for (const file of files) {
+        file.forEachEntry({}, (entry) => {
+            if (isInTrash(file, entry)) {
+                return;
+            }
+            if (fieldText(entry, PasskeyField.RELYING_PARTY) !== rpId) {
+                return;
+            }
+            const credentialId =
+                fieldText(entry, PasskeyField.GENERATED_USER_ID) ||
+                fieldText(entry, PasskeyField.CREDENTIAL_ID);
+            if (!credentialId || !hasFieldText(entry, PasskeyField.PRIVATE_KEY_PEM)) {
+                return;
+            }
+            // an empty allowCredentials list means any credential for this RP
+            if (wanted.size && !wanted.has(credentialId)) {
+                return;
+            }
+            matches.push(entry);
+        });
+    }
+    return matches;
+}
+
+function findPasskeyEntry(files, rpId, credentialId) {
+    if (!credentialId) {
+        return undefined;
+    }
+    return findPasskeyEntries(files, rpId, [credentialId])[0];
+}
+
+// Signing is an action the user should see: the picker shows up when there is
+// a choice to make, and a plain confirmation when there is not. That is also
+// what makes the UV flag honest — the assertion is only produced after the
+// user answered a prompt.
+async function pickPasskeyEntry(entries, origin, client) {
+    // One signing prompt at a time: a page can fire several get() calls at
+    // once, and stacked dialogs with the same text make one click approve an
+    // unknown number of signatures.
+    if (Alerts.alertDisplayed) {
+        throw makeError(Errors.userRejected);
+    }
+    if (entries.length === 1) {
+        await alertWithTimeout({
+            header: Locale.extensionPasskeyGetHeader,
+            body: Locale.extensionPasskeyGetBody
+                .replace('{}', getHumanReadableExtensionName(client))
+                .replace('{}', origin),
+            icon: 'key',
+            buttons: [Alerts.buttons.allow, Alerts.buttons.deny]
+        });
+        return entries[0];
+    }
+    const filter = new SelectEntryFilter(
+        { url: origin, excludePasskeys: false },
+        appModel,
+        undefined,
+        undefined
+    );
+    // the candidate list is already resolved; the view still needs a
+    // collection and its own text filtering has to keep working
+    filter.getEntries = function () {
+        const text = (this.text || '').toLowerCase();
+        const matched = text
+            ? entries.filter((entry) => (entry.title || '').toLowerCase().includes(text))
+            : entries;
+        return new SearchResultCollection(matched, { comparator: 'none' });
+    };
+    const selectEntryView = new SelectEntryView({
+        filter,
+        topMessage: Locale.extensionPasskeyGetBody
+            .replace('{}', getHumanReadableExtensionName(client))
+            .replace('{}', origin)
+    });
+    focusKeeWeb();
+    const inactivityTimer = setTimeout(() => {
+        selectEntryView.emit('result', undefined);
+    }, Timeouts.KeeWebConnectRequest);
+    const result = await selectEntryView.showAndGetResult();
+    clearTimeout(inactivityTimer);
+    if (!result || !result.entry) {
+        throw makeError(Errors.userRejected);
+    }
+    return result.entry;
+}
+
+function getPasskeyGroup(files) {
+    const file = files[0];
+    let group;
+    file.forEachGroup((candidate) => {
+        // the recycle bin is a normal group: a trashed "Browser" group must not
+        // collect new passkeys that findPasskeyEntries() then refuses to use
+        if (
+            !group &&
+            candidate.title === DefaultExtensionGroupName &&
+            !isInTrash(file, candidate)
+        ) {
+            group = candidate;
+        }
+    });
+    if (group) {
+        return group;
+    }
+    group = appModel.createNewGroupWithName(file.groups[0], file, DefaultExtensionGroupName);
+    group.setIcon(ExtensionGroupIconId);
+    return group;
 }
 
 function isKeeWebConnect(request) {
@@ -405,6 +649,8 @@ async function findEntry(request, returnIfOneMatch, filterOptions) {
     if (!entry) {
         const extName = getHumanReadableExtensionName(client);
         const topMessage = Locale.extensionSelectPasswordFor.replace('{}', extName);
+        // the filter already keeps passkey entries out, and the view calls
+        // filter.getEntries() again on its own, so it stays consistent
         const selectEntryView = new SelectEntryView({ filter, topMessage });
 
         focusKeeWeb();
@@ -641,6 +887,12 @@ const ProtocolHandlers = {
             throw makeError(Errors.userRejected);
         }
 
+        // The picker already hides these, but the field name arrives from the
+        // extension: never hand out passkey credential material here.
+        if (isPasskeyFieldName(field)) {
+            throw makeError(Errors.userRejected);
+        }
+
         let value = entry.getAllFields()[field];
         if (value.isProtected) {
             value = value.getText();
@@ -655,10 +907,216 @@ const ProtocolHandlers = {
     },
 
     async 'get-totp'(request) {
-        decryptRequest(request);
+        const payload = decryptRequest(request);
         await checkContentRequestPermissions(request);
 
-        throw new Error('Not implemented');
+        if (!payload.uuid) {
+            throw makeError(Errors.noMatches);
+        }
+        const files = getAvailableFiles(request);
+        const entry = findEntryByUuid(files, payload.uuid);
+        // a passkey entry is not a TOTP carrier: its fields must not be
+        // reachable through this action either
+        if (!entry || isPasskeyEntry(entry)) {
+            throw makeError(Errors.noMatches);
+        }
+        entry.initOtpGenerator();
+        if (!entry.otpGenerator) {
+            throw makeError(Errors.noMatches);
+        }
+        const totp = await new Promise((resolve, reject) => {
+            entry.otpGenerator.next((err, code) =>
+                code ? resolve(code) : reject(err || makeError(Errors.noMatches))
+            );
+        });
+        return encryptResponse(request, {
+            success: 'true',
+            version: getVersion(request),
+            totp
+        });
+    },
+
+    async 'passkeys-register'(request) {
+        const payload = decryptRequest(request);
+        await checkContentRequestPermissions(request);
+
+        return passkeyResponse(request, async () => {
+            const options = payload.publicKey;
+            const origin = normalizeOrigin(payload.origin);
+            if (!options || typeof options !== 'object') {
+                throw makeError(Errors.passkeyUnknown);
+            }
+            if (!isOriginAllowed(origin, AppSettingsModel.extensionPasskeysAllowLocalhost)) {
+                throw makeError(Errors.passkeyOriginNotAllowed);
+            }
+            if (
+                !checkChallenge(options.challenge) ||
+                !options.user ||
+                !checkUserId(options.user.id)
+            ) {
+                throw makeError(Errors.passkeyUnknown);
+            }
+            // UV is never set on our assertions, so a site asking for it would
+            // fail verification anyway: say so instead of pretending
+            if (options.authenticatorSelection?.userVerification === 'required') {
+                throw makeError(Errors.passkeyUserVerificationRequired);
+            }
+            const effectiveDomain = effectiveDomainOf(origin);
+            const rpId = validateRpId(
+                options.rp && options.rp.id,
+                effectiveDomain,
+                AppSettingsModel.extensionPasskeysAllowLocalhost
+            );
+            if (!rpId) {
+                throw makeError(Errors.passkeyDomainMismatch);
+            }
+
+            const files = getAvailableFiles(request);
+            const client = getClient(request);
+
+            // excludeCredentials is the site's own "already registered" list: an
+            // existing credential there means the site wants an update, not a
+            // duplicate entry
+            const excluded = options.excludeCredentials || [];
+            for (const descriptor of excluded) {
+                const existing = findPasskeyEntry(files, rpId, descriptor && descriptor.id);
+                if (existing) {
+                    throw makeError(Errors.passkeyExcluded);
+                }
+            }
+
+            // page-supplied and unbounded, so the entry field gets a sane cap
+            const username = (options.user.name || options.user.displayName || rpId)
+                .toString()
+                .slice(0, 256);
+
+            // The dialog shows the validated rpId and the origin, never the
+            // page-supplied rp.name: that string is attacker-controlled and
+            // could otherwise claim to be a site the user trusts.
+            if (Alerts.alertDisplayed) {
+                throw makeError(Errors.userRejected);
+            }
+            await alertWithTimeout({
+                header: Locale.extensionPasskeyRegisterHeader,
+                body: Locale.extensionPasskeyRegisterBody
+                    .replace('{}', getHumanReadableExtensionName(client))
+                    .replace('{}', rpId)
+                    .replace('{}', origin),
+                icon: 'key',
+                buttons: [Alerts.buttons.allow, Alerts.buttons.deny]
+            });
+
+            focusKeeWeb();
+
+            const credential = await registerCredential({ options, origin, rpId });
+
+            const group = getPasskeyGroup(files);
+            const entryFields = {
+                // the title comes from the validated rpId, not from rp.name:
+                // a page could otherwise plant a look-alike brand name in the
+                // user's Browser group
+                Title: rpId + ' (Passkey)',
+                UserName: username,
+                URL: origin,
+                [PasskeyField.RELYING_PARTY]: rpId,
+                [PasskeyField.USERNAME]: username,
+                [PasskeyField.CREDENTIAL_ID]: kdbxweb.ProtectedValue.fromString(
+                    credential.credentialId
+                ),
+                [PasskeyField.PRIVATE_KEY_PEM]: kdbxweb.ProtectedValue.fromString(
+                    credential.privateKeyPem
+                ),
+                [PasskeyField.USER_HANDLE]: kdbxweb.ProtectedValue.fromString(
+                    credential.userHandle
+                ),
+                [PasskeyField.FLAG_BE]: '1',
+                [PasskeyField.FLAG_BS]: '1'
+            };
+            appModel.createNewEntryWithFields(group, entryFields);
+
+            client.stats.passwordsWritten++;
+
+            Events.emit('browser-extension-sessions-changed');
+            Events.emit('refresh');
+
+            return credential.response;
+        });
+    },
+
+    async 'passkeys-get'(request) {
+        const payload = decryptRequest(request);
+        await checkContentRequestPermissions(request);
+
+        return passkeyResponse(request, async () => {
+            const options = payload.publicKey;
+            const origin = normalizeOrigin(payload.origin);
+            if (!options || typeof options !== 'object') {
+                throw makeError(Errors.passkeyUnknown);
+            }
+            if (!isOriginAllowed(origin, AppSettingsModel.extensionPasskeysAllowLocalhost)) {
+                throw makeError(Errors.passkeyOriginNotAllowed);
+            }
+            if (!checkChallenge(options.challenge)) {
+                throw makeError(Errors.passkeyUnknown);
+            }
+            if (options.userVerification === 'required') {
+                throw makeError(Errors.passkeyUserVerificationRequired);
+            }
+            const effectiveDomain = effectiveDomainOf(origin);
+            const rpId = validateRpId(
+                options.rpId,
+                effectiveDomain,
+                AppSettingsModel.extensionPasskeysAllowLocalhost
+            );
+            if (!rpId) {
+                throw makeError(Errors.passkeyDomainMismatch);
+            }
+
+            const files = getAvailableFiles(request);
+            const client = getClient(request);
+
+            // allowCredentials is the site's list of acceptable credentials; an
+            // empty list means "any passkey for this relying party"
+            const allowed = (options.allowCredentials || [])
+                .map((descriptor) => descriptor && descriptor.id)
+                .filter(Boolean);
+            const candidates = findPasskeyEntries(files, rpId, allowed);
+            if (!candidates.length) {
+                throw makeError(Errors.passkeyNoCredentials);
+            }
+
+            const entry = await pickPasskeyEntry(candidates, origin, client);
+            // the entry was resolved before the dialog: re-resolve it so a
+            // credential deleted, disabled or moved to the recycle bin while
+            // the prompt was up cannot still sign
+            const credentialId =
+                fieldText(entry, PasskeyField.CREDENTIAL_ID) ||
+                fieldText(entry, PasskeyField.GENERATED_USER_ID);
+            if (!findPasskeyEntry(getAvailableFiles(request), rpId, credentialId)) {
+                throw makeError(Errors.userRejected);
+            }
+            const privateKeyPem = fieldText(entry, PasskeyField.PRIVATE_KEY_PEM);
+            const userHandle = fieldText(entry, PasskeyField.USER_HANDLE);
+            if (!privateKeyPem || !credentialId) {
+                throw makeError(Errors.passkeyUnknown);
+            }
+
+            const response = await assertCredential({
+                challenge: options.challenge,
+                origin,
+                rpId,
+                credentialId,
+                privateKeyPem,
+                userHandle,
+                // a click on the confirmation is presence, not verification:
+                // reporting UV here would be a false claim to the site
+                userVerified: false
+            });
+
+            client.stats.passwordsRead++;
+
+            return response;
+        });
     },
 
     async 'set-login'(request) {
@@ -695,6 +1153,11 @@ const ProtocolHandlers = {
             }
             if (!entryToUpdate) {
                 throw new Error('Updated entry not found');
+            }
+            // a passkey entry is not a password carrier: rewriting it would mix
+            // credential material with login fields
+            if (isPasskeyEntry(entryToUpdate)) {
+                throw makeError(Errors.noMatches);
             }
         }
 

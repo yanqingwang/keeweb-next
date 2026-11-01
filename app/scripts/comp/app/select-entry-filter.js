@@ -1,5 +1,6 @@
 import { SearchResultCollection } from 'collections/search-result-collection';
 import { Ranking } from 'util/data/ranking';
+import { hasPasskeyField } from 'comp/extension/passkeys';
 
 const urlPartsRegex = /^(\w+:\/\/)?(?:(?:www|wwws|secure)\.)?([^\/]+)\/?(.*)/;
 
@@ -14,6 +15,10 @@ class SelectEntryFilter {
         this.appModel = appModel;
         this.files = files;
         this.filterOptions = filterOptions;
+        // Passkey entries carry no password and their credential material
+        // belongs to the passkey actions, so anything offering logins to the
+        // user or to an extension keeps them out by default.
+        this.excludePasskeys = windowInfo.excludePasskeys !== false;
     }
 
     getEntries() {
@@ -31,6 +36,9 @@ class SelectEntryFilter {
             x[1] === y[1] ? x[0].title.localeCompare(y[0].title) : y[1] - x[1]
         );
         entries = entries.map((p) => p[0]);
+        if (this.excludePasskeys) {
+            entries = entries.filter((entry) => !hasPasskeyField(entry));
+        }
         return new SearchResultCollection(entries, { comparator: 'none' });
     }
 

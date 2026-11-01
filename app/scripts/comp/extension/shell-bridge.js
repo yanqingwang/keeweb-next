@@ -13,6 +13,7 @@ import { Events } from 'framework/events';
 import { Alerts } from 'comp/ui/alerts';
 import { Locale } from 'util/locale';
 import { Logger } from 'util/logger';
+import { hasPasskeyField } from 'comp/extension/passkeys';
 
 const logger = new Logger('shell-bridge');
 
@@ -58,7 +59,14 @@ function allEntries(file) {
     const entries = [];
     // walk the live model, not file.entryMap: entries added by the extension
     // or by the user after the file was opened are not in that snapshot
-    file.forEachEntry({ includeDisabled: true }, (entry) => entries.push(entry));
+    file.forEachEntry({ includeDisabled: true }, (entry) => {
+        // passkey entries carry no password; their credential material must
+        // only ever leave through the passkey actions, not this channel
+        if (hasPasskeyField(entry)) {
+            return;
+        }
+        entries.push(entry);
+    });
     return entries;
 }
 

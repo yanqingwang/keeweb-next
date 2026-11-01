@@ -11,6 +11,7 @@
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
+use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 
 use aes::Aes256;
@@ -200,9 +201,18 @@ pub trait Vault: Send + Sync {
 /// contains only the client id and the shared AES key.
 pub struct ServerState {
     pub associations: Mutex<HashMap<String, Association>>,
+    /// Verifiers already accepted, with the time they were seen. The verifier
+    /// is a function of (key, nonce), so a captured request stays valid
+    /// forever otherwise: replaying it would hand out the whole vault.
+    seen_verifiers: Mutex<HashMap<String, std::time::Instant>>,
     pub vault: Box<dyn Vault>,
     store_path: Option<std::path::PathBuf>,
 }
+
+/// A client picks a fresh random nonce per request, so a repeated verifier
+/// inside this window is a replay.
+const REPLAY_WINDOW: std::time::Duration = std::time::Duration::from_secs(600);
+const MAX_SEEN_VERIFIERS: usize = 4096;
 
 impl ServerState {
     pub fn load(vault: Box<dyn Vault>, store_path: Option<std::path::PathBuf>) -> Self {
@@ -222,9 +232,33 @@ impl ServerState {
         }
         Self {
             associations: Mutex::new(associations),
+            seen_verifiers: Mutex::new(HashMap::new()),
             vault,
             store_path,
         }
+    }
+
+    /// Records a verifier and answers whether it is fresh. Replaying an
+    /// already accepted (id, verifier) pair within REPLAY_WINDOW is refused.
+    fn claim_verifier(&self, association_id: &str, verifier: &str) -> bool {
+        let mut seen = self.seen_verifiers.lock().expect("verifiers lock");
+        let now = std::time::Instant::now();
+        seen.retain(|_, at| now.duration_since(*at) < REPLAY_WINDOW);
+        let key = format!("{}:{}", association_id, verifier);
+        if seen.contains_key(&key) {
+            return false;
+        }
+        if seen.len() >= MAX_SEEN_VERIFIERS {
+            if let Some(oldest) = seen
+                .iter()
+                .min_by_key(|(_, at)| **at)
+                .map(|(key, _)| key.clone())
+            {
+                seen.remove(&oldest);
+            }
+        }
+        seen.insert(key, now);
+        true
     }
 
     fn persist(&self) {
@@ -312,19 +346,22 @@ fn key_for(state: &ServerState, request: &Request) -> Result<Association, Box<Re
     else {
         return Err(Box::new(error_response("", "", None)));
     };
-    let associations = state.associations.lock().expect("associations lock");
-    let Some(association) = associations.get(id) else {
-        return Err(Box::new(error_response("", "", None)));
-    };
-    match verify(verifier, nonce, &association.key) {
-        Ok(true) => {
-            if !verify_request_hmac(request, association) {
-                return Err(Box::new(error_response("", "", None)));
-            }
-            Ok(association.clone())
+    let association = {
+        let associations = state.associations.lock().expect("associations lock");
+        match associations.get(id) {
+            Some(association) => association.clone(),
+            None => return Err(Box::new(error_response("", "", None))),
         }
-        _ => Err(Box::new(error_response("", "", None))),
+    };
+    if verify(verifier, nonce, &association.key) != Ok(true)
+        || !verify_request_hmac(request, &association)
+    {
+        return Err(Box::new(error_response("", "", None)));
     }
+    if !state.claim_verifier(&association.id, verifier) {
+        return Err(Box::new(error_response("", "", None)));
+    }
+    Ok(association)
 }
 
 fn error_response(request_type: &str, hash: &str, id: Option<String>) -> Response {
@@ -402,12 +439,72 @@ pub fn serve(state: std::sync::Arc<ServerState>, app: tauri::AppHandle) {
         {
             continue;
         }
+        if ACTIVE_CONNECTIONS.load(Ordering::Relaxed) >= MAX_CONNECTIONS {
+            let _ = reject(&stream, "429 Too Many Requests");
+            continue;
+        }
+        ACTIVE_CONNECTIONS.fetch_add(1, Ordering::Relaxed);
         let state = state.clone();
         let app = app.clone();
         std::thread::spawn(move || {
             let _ = serve_one(stream, state, app);
+            ACTIVE_CONNECTIONS.fetch_sub(1, Ordering::Relaxed);
         });
     }
+}
+
+/// A loopback port accepts connections from every local user, so unbounded
+/// threads would let any process starve the endpoint by opening sockets.
+const MAX_CONNECTIONS: usize = 16;
+
+static ACTIVE_CONNECTIONS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
+/// Header lookup is case-insensitive and only looks at the request head.
+fn header<'a>(head: &'a str, name: &str) -> Option<&'a str> {
+    head.lines().skip(1).find_map(|line| {
+        let (key, value) = line.split_once(':')?;
+        if key.trim().eq_ignore_ascii_case(name) {
+            Some(value.trim())
+        } else {
+            None
+        }
+    })
+}
+
+/// Web pages always name their origin; native KeePassHTTP clients do not send
+/// one at all, and extension backgrounds use a non-web scheme. Anything that
+/// looks like a page is refused, which is what keeps a hostile site from
+/// driving this endpoint through CORS.
+fn origin_is_web_page(origin: &str) -> bool {
+    let lower = origin.to_ascii_lowercase();
+    lower == "null" || lower.starts_with("http://") || lower.starts_with("https://")
+}
+
+/// Host is the one header a DNS-rebinding page cannot change: the TCP peer is
+/// loopback either way, but the Host it sends is the attacker's name.
+fn host_is_loopback(host: &str) -> bool {
+    let name = if host.starts_with('[') {
+        match host.find(']') {
+            Some(end) => &host[..=end],
+            None => return false,
+        }
+    } else {
+        host.split(':').next().unwrap_or(host)
+    };
+    matches!(
+        name.to_ascii_lowercase().as_str(),
+        "127.0.0.1" | "localhost" | "[::1]"
+    )
+}
+
+fn reject(mut stream: &std::net::TcpStream, status: &str) -> std::io::Result<()> {
+    let head = format!(
+        "HTTP/1.1 {status}\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\
+         Connection: close\r\n\r\n"
+    );
+    stream.write_all(head.as_bytes())?;
+    stream.flush()
 }
 
 fn serve_one(
@@ -462,18 +559,26 @@ fn serve_one(
         .next()
         .unwrap_or_default()
         .to_string();
-    if method == "OPTIONS" {
-        // browser extensions preflight the JSON POST
-        let http = "HTTP/1.1 204 No Content\r\n\
-                    Access-Control-Allow-Origin: *\r\n\
-                    Access-Control-Allow-Headers: content-type\r\n\
-                    Access-Control-Allow-Methods: POST, OPTIONS\r\n\
-                    Access-Control-Max-Age: 600\r\n\
-                    Content-Length: 0\r\n\
-                    Connection: close\r\n\r\n";
-        stream.write_all(http.as_bytes())?;
-        stream.flush()?;
-        return Ok(());
+    // KeePassHTTP clients are native or extension backgrounds and always POST
+    // JSON; a page cannot send that without a preflight, and there is no
+    // preflight answer any more.
+    if method != "POST" {
+        return reject(&stream, "405 Method Not Allowed");
+    }
+    if let Some(host) = header(&head, "host") {
+        if !host_is_loopback(host) {
+            return reject(&stream, "421 Misdirected Request");
+        }
+    }
+    if let Some(origin) = header(&head, "origin") {
+        if origin_is_web_page(origin) {
+            return reject(&stream, "403 Forbidden");
+        }
+    }
+    if let Some(content_type) = header(&head, "content-type") {
+        if !content_type.to_ascii_lowercase().contains("application/json") {
+            return reject(&stream, "415 Unsupported Media Type");
+        }
     }
 
     let body_start = header_end;
@@ -487,8 +592,6 @@ fn serve_one(
     let body = serde_json::to_vec(&response).unwrap_or_default();
     let http = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\
-         Access-Control-Allow-Origin: *\r\n\
-         Access-Control-Allow-Headers: content-type\r\n\
          Content-Length: {}\r\nConnection: close\r\n\r\n",
         body.len()
     );
@@ -871,5 +974,54 @@ pub fn handle_request(state: &ServerState, request: Request) -> Response {
             response.error = Some(format!("unknown command: {}", other));
             response
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestVault;
+
+    impl Vault for TestVault {
+        fn request(&self, _request: VaultRequest) -> VaultReply {
+            Ok(VaultAnswer {
+                entries: vec![],
+                allowed: true,
+                unlocked: true,
+            })
+        }
+
+        fn database_hash(&self) -> Result<String, &'static str> {
+            Ok(String::new())
+        }
+    }
+
+    #[test]
+    fn host_header_must_be_loopback() {
+        assert!(host_is_loopback("127.0.0.1:19455"));
+        assert!(host_is_loopback("localhost:19455"));
+        assert!(host_is_loopback("[::1]:19455"));
+        assert!(!host_is_loopback("evil.example:19455"));
+        assert!(!host_is_loopback("127.0.0.1.evil.example"));
+        assert!(!host_is_loopback(""));
+    }
+
+    #[test]
+    fn web_page_origins_are_refused() {
+        assert!(origin_is_web_page("https://evil.example"));
+        assert!(origin_is_web_page("http://localhost:3000"));
+        assert!(origin_is_web_page("null"));
+        assert!(!origin_is_web_page("chrome-extension://abcdef"));
+        assert!(!origin_is_web_page("moz-extension://abcdef"));
+    }
+
+    #[test]
+    fn a_verifier_cannot_be_replayed() {
+        let state = ServerState::load(Box::new(TestVault), None);
+        assert!(state.claim_verifier("id", "verifier"));
+        assert!(!state.claim_verifier("id", "verifier"));
+        // another association's identical verifier is a different request
+        assert!(state.claim_verifier("other", "verifier"));
     }
 }

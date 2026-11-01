@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "manifestVersion": "0.1.0",
     "name": "open-url",
     "description": "Alt+Shift+U opens the selected entry's URL in the system browser",

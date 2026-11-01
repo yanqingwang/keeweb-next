@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "manifestVersion": "0.1.0",
     "name": "password-age",
     "description": "Marks entries whose password was last changed more than a year (or two) ago",

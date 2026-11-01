@@ -198,13 +198,23 @@ class Plugin extends Model {
         return this.id + '_' + this.getResourcePath(res);
     }
 
+    getResourceUrl(type, manifest) {
+        // The signature is part of the URL: a plugin that is re-signed without
+        // a version bump would otherwise be served from an HTTP cache filled
+        // with the previous bytes, and every install would fail verification.
+        const signature = (manifest.resources && manifest.resources[type]) || '';
+        const cacheKey = signature.slice(0, 16).replace(/[^A-Za-z0-9]/g, '');
+        return this.url + this.getResourcePath(type) + '?v=' + manifest.version + '&s=' + cacheKey;
+    }
+
     loadResource(type, local, manifest) {
         const ts = this.logger.ts();
-        const download = () => {
-            const url = this.url + this.getResourcePath(type) + '?v=' + manifest.version;
-            return httpGetMirrored(url, true);
-        };
         let downloaded = !local;
+        const download = () => {
+            downloaded = true;
+            return httpGetMirrored(this.getResourceUrl(type, manifest), true);
+        };
+        const verify = (data) => this.verifyResource(data, type);
         let res;
         if (local) {
             res = new Promise((resolve, reject) => {
@@ -215,15 +225,26 @@ class Plugin extends Model {
                 // directory; the plugin is still installed, so fetch it again
                 // and put it back into the cache
                 this.logger.info('Cached resource missing, downloading it again', type);
-                downloaded = true;
                 return download();
             });
         } else {
             res = download();
         }
-        return res.then((data) => {
-            this.logger.debug('Resource data loaded', type, this.logger.ts(ts));
-            return this.verifyResource(data, type).then((data) => {
+        return res
+            .then((data) => {
+                this.logger.debug('Resource data loaded', type, this.logger.ts(ts));
+                return verify(data).catch((e) => {
+                    if (downloaded) {
+                        throw e;
+                    }
+                    // The cached bytes can be older than the manifest, for
+                    // example when a plugin was re-signed in place. Fetch the
+                    // current copy once instead of failing for good.
+                    this.logger.info('Cached resource failed verification, refetching', type);
+                    return download().then(verify);
+                });
+            })
+            .then((data) => {
                 this.resources[type] = data;
                 if (downloaded) {
                     return new Promise((resolve) =>
@@ -231,7 +252,6 @@ class Plugin extends Model {
                     );
                 }
             });
-        });
     }
 
     verifyResource(data, type) {

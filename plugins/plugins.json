@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-29T13:39:00.227Z",
-  "signature": "WOGEQF2CBNli3Lfc7YznK71XscsrJz96JJZU58Wg7XBfFRmbXHD+vad2X72nfobt5LTDZ8y1MgrNTEYbyF3tPnMNP+cu0QERO8nIoVL25S+CjwxOzZazfabKoKd6rbXjgG+J9hR7kfgx+XE/MU6fsf+Y0UhiS5qzlRLv5d4idwgxs3ZHa6Fmur2C+KyAs4E3/786Ihzm4u3jZ9v4ncI58FBNEXlXhAXPehswx3+HR3bovT9U8DGTRI1Ed+QaoSCNwYmkGwVWGYY0pM4EhgvIC5Mmoeq/117CA7jqyOcySkVfS97nA36TbPSWitip/Oxc4WEcq+Focgv35Y/AIFacnw==",
+  "date": "2026-11-01T15:05:28.857Z",
+  "signature": "PUDuzUJ8V2ZWl5npOh774rBVSn09QlOcse8q0BJEaYXGlaTl3aWPKN4gF+VzlDiwUjGJnRCtH76fNLtV22uIsxn/DegwgDQcU3RJcnHUHdTGl5OIybT+aIYtysrsFm6ZjX1yz8qA2JD8CwluTN9WpXxudBL/LYU+CF92oeg0//dQ6E4DArNNOXu88N4+S2jAxrpGANc4DP8AHXfNFH3jw2zEMDqAYGQXnVY8MByKAYVsEYGH9zRWhIa9foy6ycXfW1a2g4vIm0Npf2/jaOY40uT3aBZYZ4OdqYwk8Io6EJsV9WX7TOSXE95T4KXIOnOQi3LCZHhSYiUbIep+2bVW2g==",
   "plugins": [
     {
       "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/copy-hotkeys",
@@ -49,7 +49,7 @@
       "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/open-url",
       "official": true,
       "manifest": {
-        "version": "1.0.0",
+        "version": "1.0.1",
         "manifestVersion": "0.1.0",
         "name": "open-url",
         "description": "Alt+Shift+U opens the selected entry's URL in the system browser",
@@ -70,7 +70,7 @@
       "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/password-age",
       "official": true,
       "manifest": {
-        "version": "1.0.0",
+        "version": "1.0.1",
         "manifestVersion": "0.1.0",
         "name": "password-age",
         "description": "Marks entries whose password was last changed more than a year (or two) ago",

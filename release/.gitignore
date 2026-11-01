@@ -3,3 +3,7 @@
 # build-macos.sh still writes them here; upload those to the release.
 *.dmg
 *.zip
+*.deb
+*.rpm
+*.AppImage
+*.pkg.tar.zst

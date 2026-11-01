@@ -59,8 +59,8 @@ pub struct BrowserRpcCall {
     pub request: Value,
 }
 
-/// Replies travel through the same one-shot registry the WebDAV/vault bridge
-/// uses; the ids come from a separate counter so they cannot collide.
+/// Replies travel through a one-shot registry; the ids come from a separate
+/// counter so they cannot collide.
 pub struct BrowserState {
     pub replies: Arc<Replies>,
     next_id: AtomicU64,
@@ -202,7 +202,7 @@ fn serve_connection(
             .unwrap_or_default()
             .to_string();
         let id = state.next_id();
-        let receiver: mpsc::Receiver<crate::vault_bridge::VaultRpcReply> =
+        let receiver: mpsc::Receiver<crate::RpcReply> =
             state.replies.register(id);
         let call = BrowserRpcCall {
             id,
@@ -241,7 +241,7 @@ fn serve_connection(
 
 #[tauri::command]
 pub fn browser_rpc_reply(
-    reply: crate::vault_bridge::VaultRpcReply,
+    reply: crate::RpcReply,
     state: tauri::State<'_, Arc<BrowserState>>,
 ) -> Result<(), String> {
     if let Some(sender) = state.replies.take(&reply.id) {

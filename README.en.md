@@ -43,11 +43,12 @@ flowchart LR
     end
     subgraph rust["Rust shell process (src-tauri/)"]
         WD["webdav_request<br/>(reqwest, GET/PUT/MOVE/...)"]
-        HTTP["Local HTTP API<br/>(127.0.0.1, planned)"]
+        BR["browser_bridge<br/>(loopback random port + token)"]
     end
     UI -- "invoke('webdav_request')" --> WD
     WD -- "https" --> DAV["WebDAV server<br/>dav.jianguoyun.com etc."]
-    HTTP -- "KeePassHTTP protocol" --> EXT["Browser / KeePass plugins"]
+    UI -- "browser-rpc / replies" --> BR
+    BR -- "native messaging" --> EXT["KeePassXC-Browser<br/>via keeweb-next-browser-host"]
 ```
 
 * **Web mode (no shell)**: `dist/` is a static site that runs in any browser;
@@ -56,10 +57,10 @@ flowchart LR
 * **WebView mode (the default desktop form)**: Tauri 2 loads the same `dist/`
   and executes WebDAV through Rust `reqwest` — no CORS, no Node, no bundled
   Chromium.
-* **Local HTTP API (in progress)**: the shell process serves a KeePassHTTP
-  compatible endpoint on `127.0.0.1` so browser extensions and KeePass plugins
-  can connect directly; the key exchange follows the KeePassHTTP
-  test-associate / associate / get-logins / set-login flow (AES-256-CBC).
+* **Browser integration**: native messaging only. Extensions hand their
+  messages to the `keeweb-next-browser-host` helper, which forwards them to
+  the shell over a random loopback port with a one-time token. There is no
+  fixed port and no HTTP endpoint.
 
 ## Done (changes relative to upstream)
 
@@ -102,36 +103,10 @@ flowchart LR
 
 * Phone: the Tauri 2 Android/iOS targets (icons already generated) plus a
   round of mobile UI adaptation.
-* Persisting association keys (they are process-local today, by design — a
-  restart re-pairs; nothing touches the disk).
-* Official browser-extension pairing for autofill (the KeeWeb Connect
-  extension already works with web-mode postMessage; the KeePassHTTP
-  endpoint is live).
+* Official browser-extension pairing for autofill (KeePassXC-Browser over
+  native messaging already works).
 * Auto-update, tray, global shortcuts, auto-type: Electron-era features, not
   migrated yet.
-
-## Local HTTP API (KeePassHTTP compatible)
-
-The shell listens on `127.0.0.1:19455` and speaks the KeePassHTTP protocol
-(pfn/keepasshttp), so existing browser extensions connect without changes:
-
-* `associate`: the extension submits a 256-bit AES key; **the webview shows a
-  confirmation dialog** and only an approval stores it. The returned Id is
-  the SHA-1 of the key.
-* `test-associate` / `get-logins` / `get-logins-count` / `set-login`: all
-  encrypted with the shared key and a per-request random nonce; each accepted
-  Verifier is remembered for ten minutes, so a replayed request is refused.
-* Every response carries the database identity (`Hash`), so extensions can
-  detect a database change.
-* Security boundaries: loopback binding only (non-loopback connections are
-  dropped before a handshake); no response is readable by a web page — the
-  `Access-Control-Allow-Origin` header is gone and requests whose `Origin` is
-  `http(s)://` or `null` (i.e. pages), whose `Host` is not `127.0.0.1` /
-  `localhost` (DNS rebinding), or that are not `POST` `application/json` are
-  rejected. Request bodies ≤1 MB, 30-second read/write timeouts, at most 16
-  concurrent connections. Associations live in `keepasshttp.json` in the app
-  config directory (0600 on Unix) and survive restarts; `get-logins` answers
-  "database is locked" while the vault is locked.
 
 ## Build
 
@@ -223,8 +198,8 @@ Email: <wangyantsing@qq.com>
   master password and key file are never written to disk.
 * The shell's `webdav_request` allows only the methods WebDAV needs and only
   http/https; it is not a generic proxy.
-* The HTTP API binds `127.0.0.1` only, ignores requests that carry a web-page
-  `Origin` or a non-loopback `Host`, uses the KeePassHTTP pairing crypto with
-  a replay cache, and requires explicit confirmation for the first connection.
+* Browser integration uses native messaging only: no fixed port, no HTTP
+  endpoint. The helper talks to the shell over a random loopback port with a
+  one-time token in a 0600 file that no web page can read.
 * MIT, same as upstream; upstream docs live in
   [docs/README.upstream.md](docs/README.upstream.md).

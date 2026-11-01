@@ -19,7 +19,7 @@ mod browser_bridge {
 
     #[tauri::command]
     pub fn browser_rpc_reply(
-        _reply: crate::vault_bridge::VaultRpcReply,
+        _reply: crate::RpcReply,
     ) -> Result<(), String> {
         Err("native messaging is only supported on desktop".to_string())
     }
@@ -32,17 +32,10 @@ mod browser_bridge {
 }
 pub mod config_store;
 mod fs_ops;
-#[cfg(desktop)]
-pub mod keepasshttp;
-pub mod vault_bridge;
 pub mod webdav;
-
-#[cfg(desktop)]
-use keepasshttp::ServerState;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use tauri::Manager;
-use vault_bridge::{VaultRpcReply, WebviewVault};
 
 use webdav::{WebDavRequest, WebDavResponse};
 
@@ -58,18 +51,14 @@ async fn webdav_request(request: WebDavRequest) -> Result<WebDavResponse, String
     webdav::perform(request).await
 }
 
-/// Vault replies from the webview land here. The webview invokes this with
-/// the call id it received; a global hook forwards the reply to the waiting
-/// HTTP request.
-#[tauri::command]
-fn vault_rpc_reply(
-    reply: VaultRpcReply,
-    state: tauri::State<'_, std::sync::Arc<Replies>>,
-) -> Result<(), String> {
-    if let Some(sender) = state.take(&reply.id) {
-        sender.send(reply).map_err(|e| e.to_string())?;
-    }
-    Ok(())
+/// A reply from the webview to a native-messaging request.
+#[derive(Debug, serde::Deserialize)]
+pub struct RpcReply {
+    pub id: u64,
+    #[serde(default)]
+    pub result: Option<serde_json::Value>,
+    #[serde(default)]
+    pub error: Option<String>,
 }
 
 /// Window controls for the in-page titlebar (macOS traffic-light style).
@@ -118,7 +107,7 @@ fn open_url(url: String) -> Result<(), String> {
 
 /// Waiters for in-flight vault RPC calls.
 pub struct Replies {
-    waiters: std::sync::Mutex<HashMap<u64, mpsc::SyncSender<VaultRpcReply>>>,
+    waiters: std::sync::Mutex<HashMap<u64, mpsc::SyncSender<RpcReply>>>,
 }
 
 impl Default for Replies {
@@ -134,13 +123,13 @@ impl Replies {
         }
     }
 
-    pub fn register(&self, id: u64) -> mpsc::Receiver<VaultRpcReply> {
+    pub fn register(&self, id: u64) -> mpsc::Receiver<RpcReply> {
         let (tx, rx) = mpsc::sync_channel(1);
         self.waiters.lock().expect("waiters lock").insert(id, tx);
         rx
     }
 
-    pub fn take(&self, id: &u64) -> Option<mpsc::SyncSender<VaultRpcReply>> {
+    pub fn take(&self, id: &u64) -> Option<mpsc::SyncSender<RpcReply>> {
         self.waiters.lock().expect("waiters lock").remove(id)
     }
 }
@@ -254,7 +243,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
         webdav_request,
-        vault_rpc_reply,
         window_minimize,
         window_toggle_maximize,
         window_focus,
@@ -296,31 +284,15 @@ pub fn run() {
                 eprintln!("[tray] unavailable: {}", e);
             }
 
-            let handle = app.handle().clone();
             let config_dir = app
                 .path()
                 .app_data_dir()
                 .map(|dir| dir.join("config"))
                 .map_err(|e| e.to_string())?;
-            let keepass_store = config_dir.join("keepasshttp.json");
             let store = std::sync::Arc::new(config_store::ConfigStore::default());
             store.init(config_dir);
             app.manage(config_store::State(store.clone()));
-            let replies = std::sync::Arc::new(Replies::new());
-            app.manage(replies.clone());
             setup_browser_bridge(app);
-            let vault = WebviewVault::new(handle.clone(), replies);
-            let state = std::sync::Arc::new(ServerState::load(
-                Box::new(vault),
-                Some(keepass_store),
-            ));
-
-            // The KeePassHTTP endpoint binds 127.0.0.1 only; paired
-            // clients are loaded from the config directory above.
-            let http_handle = handle.clone();
-            std::thread::spawn(move || {
-                keepasshttp::serve(state, http_handle);
-            });
             Ok(())
         })
         .run(tauri::generate_context!())

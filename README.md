@@ -38,11 +38,12 @@ flowchart LR
     end
     subgraph rust["Rust 壳进程 (src-tauri/)"]
         WD["webdav_request<br/>(reqwest, GET/PUT/MOVE/...)"]
-        HTTP["KeePassHTTP API<br/>(127.0.0.1:19455)"]
+        BR["browser_bridge<br/>(回环随机端口 + token)"]
     end
     UI -- "invoke('webdav_request')" --> WD
     WD -- "https" --> DAV["WebDAV 服务<br/>dav.jianguoyun.com 等"]
-    HTTP -- "KeePassHTTP 协议" --> EXT["浏览器插件 / KeePass 插件"]
+    UI -- "browser-rpc / 回执" --> BR
+    BR -- "native messaging" --> EXT["KeePassXC-Browser<br/>经 keeweb-next-browser-host"]
 ```
 
 * **Web 模式（无壳）**：`dist/` 是纯静态站点，任何浏览器可跑；本地文件用
@@ -50,14 +51,19 @@ flowchart LR
 * **WebView 模式（默认桌面形态）**：Tauri 2 加载同一份 `dist/`（`tauri://localhost`
   安全上下文，WebCrypto 可用），WebDAV 走 Rust `reqwest`，无 CORS 限制、无 Node、
   无 Chromium 捆绑。
-* **本机 HTTP API**：壳进程在 `127.0.0.1:19455` 起 KeePassHTTP 兼容端点，
-  浏览器插件/KeePass 插件直接对话；密钥配对沿用 KeePassHTTP 的
-  test-associate / associate / get-logins / set-login 流程（AES-256-CBC）。
+* **浏览器集成**：只走 native messaging。浏览器扩展把消息交给
+  `keeweb-next-browser-host` 助手，助手再通过回环随机端口 + 一次性 token 转给
+  壳进程；**不再监听 `19455` 之类的固定端口，也没有 HTTP 端点**。
 
 ## 已完成（本仓库相对上游的改动）
 
 * 移除 `desktop/`、Electron 13 与全部 electron/grunt 打包任务；
   `package.json` 中不再有 Electron / native-modules / native-messaging-host。
+* 新增 `src-tauri/src/browser_bridge.rs`：native messaging 桥。助手
+  （`keeweb-next-browser-host`）连回环随机端口，首行是一次性 token；
+  请求转成 `browser-rpc` 事件交给 webview 的协议实现，回执走
+  `browser_rpc_reply`。端口与 token 写在用户私有目录的 `endpoint.json`
+  （Unix 0600），并发连接与帧大小都有上限。
 * 新增 `src-tauri/`（Tauri 2）：加载 `dist/`，提供 `webdav_request` 命令
   （方法白名单 GET/HEAD/PUT/POST/DELETE/MOVE/COPY/MKCOL/PROPFIND/OPTIONS，
   仅 http/https，5 分钟超时，512MB 上限，重定向 ≤5）。
@@ -87,22 +93,21 @@ flowchart LR
   URL、用户名与密码，无需重输；保存密码可在配置里的「Remember password」取消。
 * 密钥文件默认按路径记住，再次打开自动读取；密码输入框旁的「Remember key file」
   可随时关闭。壳内读取密钥文件走与数据库相同的本地文件通道。
-* Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制 + `plugins/` 与
-  `browser-extension/` 离线副本）。
+* Arch 打包：`packaging/arch/PKGBUILD`（web + 壳二进制 + `plugins/` 离线副本）。
 
 ## 尚未完成 / 路线图
 
 * 手机端：Tauri 2 的 Android/iOS 目标（图标已生成），UI 需要一轮移动端适配；
   与桌面壳差异较大，暂未进入本分支的发布流程。
-* 自动填充浏览器插件的官方对接（KeeWeb Connect 扩展已兼容 web 模式 postMessage；
-  KeePassHTTP 端点已可用）。
+* 自动填充浏览器插件的官方对接（KeePassXC-Browser 走 native messaging 已可用）。
 * 自动更新、全局快捷键、auto-type：Electron 时代功能，暂未迁移。
 
 ## 浏览器集成
 
-三种方式，按推荐程度排序：
+只有一种方式：native messaging。KeePassHTTP 端点与其自带扩展已移除，应用不监听
+任何固定端口。
 
-### KeePassXC-Browser（推荐，native messaging）
+### KeePassXC-Browser
 
 壳启动时为主流浏览器写入 `org.keepassxc.keepassxc_browser` 的主机清单，
 指向随包分发的 `keeweb-next-browser-host` 助手；扩展按常规流程连接即可。
@@ -159,47 +164,6 @@ flowchart LR
   站点要求 `userVerification: 'required'` 时会明确报错，而不是谎报已验证。
 * 只实现 ES256（P-256 + SHA-256）与 `fmt: none` 的 attestation。要求
   `attestation: direct`、或只提供 RS256/EdDSA 的站点无法使用。
-
-### 自带扩展（KeeWeb Connect 协议）
-
-* `browser-extension/`（Manifest V3，Chrome/Edge/Chromium；Firefox 用
-  同目录的 `manifest.firefox.json` 改名）。打开 `chrome://extensions` → 开发者模式 →
-  「加载已解压的扩展程序」→ 选择该目录（Arch 包内路径
-  `/usr/share/keeweb-next/browser-extension`），点扩展图标 →「Connect to the app」。
-  连接后聚焦页面上的登录框会直接弹出匹配的账号菜单，点选即填充；也可在扩展弹窗里
-  保存当前页面已输入的登录。
-
-### KeePassHTTP 兼容端点（备选）
-
-* 任何 KeePassHTTP 客户端都可以直连 `127.0.0.1:19455`，例如 chromeIPass、
-  KeePassHttp-Connector。协议对齐 KeePassHTTP v2.3.1.0：`get-logins` /
-  `get-logins-count` / `get-all-logins` / `get-logins-by-names` / `set-login`，
-  响应带 HMAC-SHA256，`SubmitUrl` 参与匹配。
-* 扩展读取的是**当前解锁会话的实时数据**（遍历分组而非打开时的快照），
-  由扩展保存的登录会标记文件已修改并立即走正常保存/同步流程写入 WebDAV。
-* 其他设备写入的新数据需要应用先完成同步（打开文件、保存或自动保存时触发）；
-  扩展不会在每次查询时强制拉取远端。
-* KeePassHTTP 的关联密钥持久化在应用配置目录的 `keepasshttp.json`（Unix 0600），
-  重启后无需重新配对；KeePassXC-Browser 的授权决定同样可持久化。
-
-## 本机 HTTP API（KeePassHTTP 兼容）
-
-壳进程监听 `127.0.0.1:19455`，实现 KeePassHTTP 协议（pfn/keepasshttp），
-现有浏览器插件无需修改即可连接：
-
-* `associate`：插件提交 256-bit AES 密钥，**webview 内弹窗人工确认**后才会保存；
-  返回的 Id 是密钥的 SHA-1。
-* `test-associate` / `get-logins` / `get-logins-count` / `set-login`：
-  全部使用共享密钥 + 每请求随机 Nonce 加密；每个已接受的 Verifier 会记入
-  10 分钟的重放缓存，重复提交同一次请求会被拒绝。
-* 数据库标识（Hash）随每个响应返回，插件可感知数据库更换。
-* 安全边界：只绑 127.0.0.1、非回环连接直接丢弃；**任何网页都读不到响应** ——
-  返回头不再有 `Access-Control-Allow-Origin`，`Origin` 为 `http(s)://` 或 `null`
-  的请求（即浏览器页面）、`Host` 不是 `127.0.0.1`/`localhost` 的请求（DNS
-  rebinding）、非 `POST` 或非 `application/json` 的请求一律拒绝。请求体 ≤1MB、
-  读写超时 30s、并发连接上限 16。关联密钥写在应用配置目录的
-  `keepasshttp.json`（Unix 0600），应用退出后仍然有效；`get-logins` 只在库解锁时
-  有结果，锁定时明确报 "database is locked"。
 
 ## 托盘
 
@@ -293,5 +257,6 @@ makepkg -si          # 装入 /usr/bin/keeweb-next 与 /usr/share/keeweb-next/di
 
 * 数据库在本地解密；WebDAV 只传密文。主密码/密钥文件不落盘。
 * 壳的 `webdav_request` 只允许 WebDAV 需要的方法与 http/https，不充当通用代理。
-* HTTP API 只绑 `127.0.0.1`，沿用 KeePassHTTP 的配对加密，首次连接需人工确认。
+* 浏览器集成只走 native messaging，不监听任何固定端口；助手与壳之间是回环随机
+  端口 + 一次性 token（文件 0600），网页无法访问。
 * MIT，与上游一致；上游文档见 [docs/README.upstream.md](docs/README.upstream.md)。

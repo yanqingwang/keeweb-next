@@ -57,11 +57,9 @@ class SettingsBrowserView extends View {
             })
         };
         if (Features.isDesktop) {
-            // the shell speaks KeePassHTTP; the matrix below belongs to the
-            // Electron build that no longer exists
-            data.httpApi = true;
-            data.httpEndpoint = 'http://127.0.0.1:19455';
-            data.kphExtensions = Links.KphExtensions;
+            // the desktop shell talks to KeePassXC-Browser over native
+            // messaging; there is no loopback HTTP endpoint any more
+            data.desktopShell = true;
             data.nativeIntegration = AppSettingsModel.nativeBrowserIntegration !== false;
             data.kpxcFirefox = Links.KpxcForFirefox;
             data.kpxcChrome = Links.KpxcForChrome;

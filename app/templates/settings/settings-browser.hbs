@@ -1,6 +1,6 @@
 <div class="settings__content">
     <h1><i class="fa fa-{{icon}} settings__head-icon"></i> {{res 'setBrowserTitle'}}</h1>
-    {{#if httpApi}}
+    {{#if desktopShell}}
         <h2>{{res 'setBrowserKpxcTitle'}}</h2>
         <p>{{res 'setBrowserKpxcIntro'}}</p>
         <p>
@@ -20,16 +20,6 @@
             <p>{{res 'setBrowserRememberedDesc'}}</p>
             <button class="btn btn-secondary settings__browser-btn-forget-connect">{{res 'setBrowserRememberedForget'}}</button>
         </div>
-        <h2>{{res 'setBrowserKphTitle'}}</h2>
-        <pre class="settings__pre input-base">{{httpEndpoint}}</pre>
-        <p>{{res 'setBrowserKphExtensions'}}:</p>
-        <ul>
-            {{#each kphExtensions as |ext|}}
-                <li><a href="{{ext.url}}" target="_blank" rel="noreferrer">{{ext.name}}</a></li>
-            {{/each}}
-        </ul>
-        <h2>{{res 'setBrowserBundledTitle'}}</h2>
-        <p>{{res 'setBrowserBundledBody'}}</p>
     {{else if desktop}}
         <p>{{res 'setBrowserIntroDesktop'}}</p>
         <p>KeeWeb Connect: {{res 'setBrowserIntroKeeWebConnect'}}</p>

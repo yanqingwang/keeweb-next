@@ -38,10 +38,6 @@ package() {
     install -d "$pkgdir/usr/share/keeweb-next"
     cp -a dist "$pkgdir/usr/share/keeweb-next/dist"
 
-    # browser extensions speaking the local KeePassHTTP endpoint
-    cp -a browser-extension "$pkgdir/usr/share/keeweb-next/browser-extension"
-    cp -a browser-extension-firefox "$pkgdir/usr/share/keeweb-next/browser-extension-firefox"
-
     # plugin gallery for offline installs; the signing key stays in the repo
     install -d "$pkgdir/usr/share/keeweb-next/plugins"
     (cd plugins && tar -cf - --exclude=signing --exclude=examples --exclude=keeweb-plugin .) |

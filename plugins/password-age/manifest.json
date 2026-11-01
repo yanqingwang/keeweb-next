@@ -1,5 +1,5 @@
 {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "manifestVersion": "0.1.0",
     "name": "password-age",
     "description": "Marks entries whose password was last changed more than a year (or two) ago",
@@ -10,7 +10,7 @@
     },
     "resources": {
         "js": "DnRPuvOc16dtxEmYwvgEpbPaeOv+KdAgnHMMW2VRlVcBZ1NDJMxoFOrIkP682JtpyG8jdRnk6NKU35MQBlcUP2XqBgnpVH8mJDF7D9MYm5i7CykoIfbd9BicmSa5wC1p/q+9WqN0zM5fq/tqUTCn8bHQkNvuqrcQ0ul9qze/a4rg0iGDjcyv5L9ZX4jiuxjU4IcwJLNR/EmIbHWwTu2QICmuFKVReSH/nDEPaS83YV3/08Sa6zV8CwAGVBEoT6wC2KrxePPInhF83HNSoxyf8uAA8RjoRLWhdPDK+ZLO9dED5su0JEHeDWwPh6Y7bCc8VBQ5NBP7eeyJSrGD42bMNQ==",
-        "css": "DjYN9C5zbluzoB76QdBBAKqIh3TiWj0hs/oBItgl49Avp7MroEpGyur1039tghI58q2sNuEPUgnz9pMFQGivfeWwf1KKpvUaziKIbKW7fkZilVLlaF1KcrqdVaDelaxxVbxuU8CHYYYHG+4zM1diXVIMcCQMvUXD5hmG/P3JfgWasJ3Z7JNOPFeYkeL6R37GYVX+to5NGs5obTiYOrgOS1k1CesjBJ5KBfQLPkTH/B2oPVOvXGVyPI8lV+05AL+yLCDE3P2s8E/UUKnLrWpXE9cw7LJKBBAs/qmaOQzVvgiMN+IJAsZiEpj0nJHX35/ygoaWeh/rG4jkx+vpva/S5g=="
+        "css": "XiypB+d1Ki1tKsUp5IotTAIdXcui2vQs1kFrv2YUphLloOG46Ddyglry/qXYe+Qgplz2Ic9QCsEa297JPvgjTL/0PEA0nvfohIBsNszaLCpJLjyT6t30DiRfEzmLwxHaJhPjONRdjAp8zXcS0YsqyGJwh4mFwmowNRWuKRxQ16tC+ii3Ir85c/AGrtgQnhE6VsdHI841tZ8PigEwZeZ6ldRBU5r9wwPy/q+RvpWHgutIXMQ6q/6oBq6uyATCHDKMXGK6X4zkll/OhAnY4lFmqNm/LMTu4P05msNLHzQzx+Dv+wsLR2LTcR+q2kwmxtwmLcBDV7BLUo2MWkqHoyzJag=="
     },
     "license": "MIT",
     "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/password-age",

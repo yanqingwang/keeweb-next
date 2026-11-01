@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-01T15:05:28.857Z",
-  "signature": "PUDuzUJ8V2ZWl5npOh774rBVSn09QlOcse8q0BJEaYXGlaTl3aWPKN4gF+VzlDiwUjGJnRCtH76fNLtV22uIsxn/DegwgDQcU3RJcnHUHdTGl5OIybT+aIYtysrsFm6ZjX1yz8qA2JD8CwluTN9WpXxudBL/LYU+CF92oeg0//dQ6E4DArNNOXu88N4+S2jAxrpGANc4DP8AHXfNFH3jw2zEMDqAYGQXnVY8MByKAYVsEYGH9zRWhIa9foy6ycXfW1a2g4vIm0Npf2/jaOY40uT3aBZYZ4OdqYwk8Io6EJsV9WX7TOSXE95T4KXIOnOQi3LCZHhSYiUbIep+2bVW2g==",
+  "date": "2026-11-01T15:39:07.816Z",
+  "signature": "rld0msBUPEcVYvoBGD3dC5mZD7R7iphwHSdoBGg5rNJmy+XwAYwBop9wsxr44gh/0Mrk57Bt44nV+CiiJp91inO/Q8yz9xc3PbWdclSEmjObjKq2Ih+hTtDM8w5EN3Lj/4+hlBvpyGRR6jWyBqhhnaCn9Vy/N3EMMHmzii4OSgpTQOUumSn0T2WWX5JiqH8Z6Nzj4NFFjd/CpOhL2e72Ji15NItD1oEZN63JpkFUunk0GqNuSCtaMJl8EPNJVz38y8L+JURq7R8fml0kbQoldoW5CoPUZU3nw5MctDCUKCdkBfR/a36YX4wB/TcJNGfNMlqe+xAoXtOJguoZ+QAG3g==",
   "plugins": [
     {
       "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/copy-hotkeys",
@@ -70,7 +70,7 @@
       "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/password-age",
       "official": true,
       "manifest": {
-        "version": "1.0.1",
+        "version": "1.0.2",
         "manifestVersion": "0.1.0",
         "name": "password-age",
         "description": "Marks entries whose password was last changed more than a year (or two) ago",
@@ -81,7 +81,7 @@
         },
         "resources": {
           "js": "DnRPuvOc16dtxEmYwvgEpbPaeOv+KdAgnHMMW2VRlVcBZ1NDJMxoFOrIkP682JtpyG8jdRnk6NKU35MQBlcUP2XqBgnpVH8mJDF7D9MYm5i7CykoIfbd9BicmSa5wC1p/q+9WqN0zM5fq/tqUTCn8bHQkNvuqrcQ0ul9qze/a4rg0iGDjcyv5L9ZX4jiuxjU4IcwJLNR/EmIbHWwTu2QICmuFKVReSH/nDEPaS83YV3/08Sa6zV8CwAGVBEoT6wC2KrxePPInhF83HNSoxyf8uAA8RjoRLWhdPDK+ZLO9dED5su0JEHeDWwPh6Y7bCc8VBQ5NBP7eeyJSrGD42bMNQ==",
-          "css": "DjYN9C5zbluzoB76QdBBAKqIh3TiWj0hs/oBItgl49Avp7MroEpGyur1039tghI58q2sNuEPUgnz9pMFQGivfeWwf1KKpvUaziKIbKW7fkZilVLlaF1KcrqdVaDelaxxVbxuU8CHYYYHG+4zM1diXVIMcCQMvUXD5hmG/P3JfgWasJ3Z7JNOPFeYkeL6R37GYVX+to5NGs5obTiYOrgOS1k1CesjBJ5KBfQLPkTH/B2oPVOvXGVyPI8lV+05AL+yLCDE3P2s8E/UUKnLrWpXE9cw7LJKBBAs/qmaOQzVvgiMN+IJAsZiEpj0nJHX35/ygoaWeh/rG4jkx+vpva/S5g=="
+          "css": "XiypB+d1Ki1tKsUp5IotTAIdXcui2vQs1kFrv2YUphLloOG46Ddyglry/qXYe+Qgplz2Ic9QCsEa297JPvgjTL/0PEA0nvfohIBsNszaLCpJLjyT6t30DiRfEzmLwxHaJhPjONRdjAp8zXcS0YsqyGJwh4mFwmowNRWuKRxQ16tC+ii3Ir85c/AGrtgQnhE6VsdHI841tZ8PigEwZeZ6ldRBU5r9wwPy/q+RvpWHgutIXMQ6q/6oBq6uyATCHDKMXGK6X4zkll/OhAnY4lFmqNm/LMTu4P05msNLHzQzx+Dv+wsLR2LTcR+q2kwmxtwmLcBDV7BLUo2MWkqHoyzJag=="
         },
         "license": "MIT",
         "url": "https://cdn.jsdelivr.net/gh/yanqingwang/keeweb-next@master/plugins/password-age",

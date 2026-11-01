@@ -1,7 +1,8 @@
-.list__item[data-pw-age] {
-    position: relative;
-}
-
+/* The list virtualizes rows: every .list__item is already position:absolute
+   with an inline top. Overriding position here would pull the marked rows out
+   of that layout and stack them on top of each other, so the mark only adds a
+   pseudo-element; an absolutely positioned parent is the containing block the
+   ::before needs. */
 .list__item[data-pw-age]::before {
     content: '';
     position: absolute;

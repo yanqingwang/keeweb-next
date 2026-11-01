@@ -1,0 +1,14 @@
+[package]
+name = "keeweb-next-browser-host"
+version = "0.1.3"
+description = "Native-messaging helper that relays KeePassXC-Browser traffic to KeeWeb Next"
+edition = "2021"
+license = "MIT"
+
+[[bin]]
+name = "keeweb-next-browser-host"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

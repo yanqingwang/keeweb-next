@@ -5,7 +5,7 @@
 //! each one is forwarded, newline-delimited, to the running KeeWeb Next app
 //! over its loopback endpoint, and the answer goes back the same way.
 
-#[path = "../browser_socket.rs"]
+#[path = "browser_socket.rs"]
 mod browser_socket;
 
 use std::io::{Read, Write};

@@ -17,7 +17,7 @@ execFileSync(
     [
         'build',
         '--manifest-path',
-        join(root, 'src-tauri', 'Cargo.toml'),
+        join(root, 'src-tauri', 'browser-host', 'Cargo.toml'),
         '--target-dir',
         helperTarget,
         '--release',

@@ -123,6 +123,7 @@ class ListView extends View {
 
             const firstListItem = this.itemsContainerEl.firstElementChild;
             this.itemHeight = firstListItem.getBoundingClientRect().height;
+            this.positionItem(firstListItem, 0);
 
             this.renderedItems = new Map([[0, firstListItem]]);
 
@@ -197,7 +198,7 @@ class ListView extends View {
             const el = renderedElements[i];
             const ix = renderedIndices[i];
             this.itemsContainerEl.append(el);
-            el.style.top = ix * itemHeight + 'px';
+            this.positionItem(el, ix);
             renderedItems.set(ix, el);
         }
 
@@ -231,9 +232,18 @@ class ListView extends View {
         const [el] = tempEl.children;
 
         this.itemsContainerEl.append(el);
-        el.style.top = ix * this.itemHeight + 'px';
+        this.positionItem(el, ix);
 
         this.renderedItems.set(ix, el);
+    }
+
+    // The list only works when every row is absolutely positioned at its
+    // index: rows that fall back into normal flow drift into their neighbours.
+    // Plugins are allowed to decorate rows, so the invariant is set inline
+    // instead of trusting the stylesheet to survive.
+    positionItem(el, ix) {
+        el.style.position = 'absolute';
+        el.style.top = ix * this.itemHeight + 'px';
     }
 
     getDescField() {

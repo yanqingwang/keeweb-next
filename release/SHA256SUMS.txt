@@ -1,6 +1,6 @@
-cfe7abf1688449b014ae1bd1b1c45db29c91cb8f030f94dc6a7b1c2d2d4697d3  release/KeeWeb Next-0.1.3-1.x86_64.rpm
-16adc2685bda8d016720fa4754022a2f24df4641a2caa592720387d815b2d654  release/keeweb-next-0.1.3-3-x86_64.pkg.tar.zst
+ddb574db6ffa3aba4abd1141e3b530db7034e6537ff749fe52df7224667b300c  release/KeeWeb Next-0.1.3-1.x86_64.rpm
+898d98e7a5d721697143ffff96b555bd11401e373a1ba1912dd9cda8b0bb41fd  release/keeweb-next-0.1.3-4-x86_64.pkg.tar.zst
 9da82f50ed93e60d0d3684f6bba3ef4304eaf49c5a9ba2cadc0837de8ca1d063  release/KeeWeb-Next_0.1.3_aarch64.app.zip
 7ed3e8ec2041d6e7d0c74fc993b7c1fddf2a3019b65e12e3875f33fca2896a29  release/KeeWeb-Next_0.1.3_aarch64.dmg
-bd085250e91bf9652cb295d8837e8a282d1eceddb78b358832112cad50bce8d7  release/KeeWeb Next_0.1.3_amd64.AppImage
-f3c13027d7f382c25fc24095d8f212e5c2afd88ea9e5c414ced8c6bf7cf5c9ce  release/KeeWeb Next_0.1.3_amd64.deb
+8835dfdc2de7565736af6cc5c00d396ebb3edd604ae2286a0b697b9521291bbb  release/KeeWeb Next_0.1.3_amd64.AppImage
+2b89279812a3a07c92089c071ade030cba47f1e076ab8540af6378711d0dd59d  release/KeeWeb Next_0.1.3_amd64.deb

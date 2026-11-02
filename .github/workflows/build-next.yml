@@ -59,20 +59,20 @@ jobs:
             bundles: deb,rpm,appimage
           - os: macos-latest
             bundles: dmg,app
-            # Apple code signing + notarization (requires a paid Developer ID).
-            # Add these as repo secrets; when present, Tauri signs + notarizes
-            # a Gatekeeper-clean DMG. When absent, the ad-hoc sign step below
-            # re-signs so the app is still launchable without a Developer ID.
-            env:
-              APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-              APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-              APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-              APPLE_ID: ${{ secrets.APPLE_ID }}
-              APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-              APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           - os: windows-latest
             bundles: msi,nsis
     runs-on: ${{ matrix.os }}
+    # Apple code signing + notarization (requires a paid Developer ID). When
+    # these repo secrets are present, Tauri signs + notarizes a Gatekeeper-clean
+    # DMG; when absent, the ad-hoc sign step below re-signs so the app is still
+    # launchable without a Developer ID. Harmless on Linux/Windows (unused).
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

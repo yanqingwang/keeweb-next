@@ -59,10 +59,10 @@ jobs:
             bundles: deb,rpm,appimage
           - os: macos-latest
             bundles: dmg,app
-            # Apple code signing + notarization. Add these as repo secrets
-            # (APPLE_CERTIFICATE = `openssl base64 -A -in cert.p12`,
-            #  APPLE_SIGNING_IDENTITY = "Developer ID Application: Name (TEAMID)")
-            # to ship a Gatekeeper-clean DMG. Unset -> harmless ad-hoc fallback.
+            # Apple code signing + notarization (requires a paid Developer ID).
+            # Add these as repo secrets; when present, Tauri signs + notarizes
+            # a Gatekeeper-clean DMG. When absent, the ad-hoc sign step below
+            # re-signs so the app is still launchable without a Developer ID.
             env:
               APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
               APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -99,6 +99,24 @@ jobs:
         # the project-pinned tauri-cli (package.json); native build per runner,
         # so bundles land in src-tauri/target/release/bundle
         run: npx tauri build --bundles ${{ matrix.bundles }}
+      - name: Sign macOS app (ad-hoc fallback when no Apple ID)
+        # Without a Developer ID cert, tauri ships a malformed ad-hoc
+        # signature that Gatekeeper rejects as "damaged". Re-sign it so the
+        # only prompt is the one-time "unverified developer" (right-click ->
+        # Open) bypass. Skipped automatically once APPLE_CERTIFICATE is set,
+        # deferring to real signing + notarization.
+        if: runner.os == 'macOS' && secrets.APPLE_CERTIFICATE == ''
+        run: |
+          APP=$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)
+          DMG=$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.dmg' | head -n1)
+          echo "ad-hoc signing $APP"
+          codesign --force --deep --sign - "$APP"
+          # Tauri already packed the DMG from the (malformed) app, so rebuild
+          # it from the re-signed app; otherwise the extracted app stays "damaged".
+          if [ -n "$DMG" ]; then
+            echo "re-packing $DMG from signed app"
+            hdiutil create -volname "KeeWeb Next" -srcfolder "$APP" -ov -format UDZO "$DMG"
+          fi
       - name: Test (Rust)
         if: runner.os != 'Windows'
         run: cargo test --manifest-path src-tauri/Cargo.toml

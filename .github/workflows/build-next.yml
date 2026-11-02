@@ -103,10 +103,14 @@ jobs:
         # Without a Developer ID cert, tauri ships a malformed ad-hoc
         # signature that Gatekeeper rejects as "damaged". Re-sign it so the
         # only prompt is the one-time "unverified developer" (right-click ->
-        # Open) bypass. Skipped automatically once APPLE_CERTIFICATE is set,
-        # deferring to real signing + notarization.
-        if: runner.os == 'macOS' && secrets.APPLE_CERTIFICATE == ''
+        # Open) bypass. With APPLE_CERTIFICATE set, Tauri already signed and
+        # notarized, so skip.
+        if: runner.os == 'macOS'
         run: |
+          if [ -n "${APPLE_CERTIFICATE:-}" ]; then
+            echo "APPLE_CERTIFICATE set -> Tauri signed + notarized; skipping"
+            exit 0
+          fi
           APP=$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)
           DMG=$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.dmg' | head -n1)
           echo "ad-hoc signing $APP"

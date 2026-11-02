@@ -59,6 +59,17 @@ jobs:
             bundles: deb,rpm,appimage
           - os: macos-latest
             bundles: dmg,app
+            # Apple code signing + notarization. Add these as repo secrets
+            # (APPLE_CERTIFICATE = `openssl base64 -A -in cert.p12`,
+            #  APPLE_SIGNING_IDENTITY = "Developer ID Application: Name (TEAMID)")
+            # to ship a Gatekeeper-clean DMG. Unset -> harmless ad-hoc fallback.
+            env:
+              APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+              APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+              APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+              APPLE_ID: ${{ secrets.APPLE_ID }}
+              APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+              APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           - os: windows-latest
             bundles: msi,nsis
     runs-on: ${{ matrix.os }}

@@ -128,7 +128,7 @@ jobs:
             exit 0
           fi
           APP=$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)
-          DMG=$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.dmg' | head -n1)
+          DMG=$(find src-tauri/target/release/bundle -maxdepth 2 -name '*.dmg' | head -n1)
           echo "ad-hoc signing $APP"
           codesign --force --deep --sign - "$APP"
           # Tauri already packed the DMG from the (malformed) app, so rebuild

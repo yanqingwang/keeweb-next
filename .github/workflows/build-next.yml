@@ -62,17 +62,6 @@ jobs:
           - os: windows-latest
             bundles: msi,nsis
     runs-on: ${{ matrix.os }}
-    # Apple code signing + notarization (requires a paid Developer ID). When
-    # these repo secrets are present, Tauri signs + notarizes a Gatekeeper-clean
-    # DMG; when absent, the ad-hoc sign step below re-signs so the app is still
-    # launchable without a Developer ID. Harmless on Linux/Windows (unused).
-    env:
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -95,6 +84,33 @@ jobs:
         run: npm run build:web
       - name: Prepare native messaging host
         run: node scripts/prepare-browser-host.mjs
+      - name: Configure Apple signing (macOS)
+        # Tauri tries to import a signing certificate whenever
+        # APPLE_CERTIFICATE exists in the environment, even when empty, so
+        # export these only when a Developer ID certificate is configured.
+        if: runner.os == 'macOS'
+        env:
+          SRC_CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          SRC_CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          SRC_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          SRC_APPLE_ID: ${{ secrets.APPLE_ID }}
+          SRC_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          SRC_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$SRC_CERT" ]; then
+            echo "no APPLE_CERTIFICATE secret; Tauri stays ad-hoc"
+            exit 0
+          fi
+          {
+            echo "APPLE_CERTIFICATE<<EOF"
+            echo "$SRC_CERT"
+            echo "EOF"
+            echo "APPLE_CERTIFICATE_PASSWORD=$SRC_CERT_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$SRC_SIGNING_IDENTITY"
+            echo "APPLE_ID=$SRC_APPLE_ID"
+            echo "APPLE_PASSWORD=$SRC_APPLE_PASSWORD"
+            echo "APPLE_TEAM_ID=$SRC_TEAM_ID"
+          } >> "$GITHUB_ENV"
       - name: Build shell
         # the project-pinned tauri-cli (package.json); native build per runner,
         # so bundles land in src-tauri/target/release/bundle

@@ -177,8 +177,11 @@ jobs:
                -o -name '*.dmg' -o -name '*.msi' -o -name '*.exe' \
             \) -exec cp {} release/ \;
           # macOS .app arrives as a directory inside the artifact
+          # (actions/download-artifact drops exec bits, which makes the app
+          # fail with "Permission denied" when launched from a zip of it)
           find artifacts -type d -name '*.app' | while read -r app; do
             name=$(basename "$app")
+            chmod +x "$app/Contents/MacOS/"* 2>/dev/null || true
             (cd "$(dirname "$app")" && zip -qry "$OLDPWD/release/${name}.zip" "$name")
           done
           ls -l release

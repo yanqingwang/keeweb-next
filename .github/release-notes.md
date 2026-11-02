@@ -51,3 +51,10 @@ KeeWeb Next — KeeWeb in the system WebView, with a Tauri 2 shell.
 Arch Linux users: the package is attached to this release as
 `keeweb-next-<ver>-x86_64.pkg.tar.zst` (install with `pacman -U`), or build
 from `packaging/arch/PKGBUILD` in the repository.
+
+**macOS first launch**
+
+The macOS build is ad-hoc signed, so Gatekeeper shows a one-time
+"cannot verify the developer" prompt. Right-click the app in Finder and
+choose **Open** (or allow it under 系统设置 → 隐私与安全性). This is only
+needed once per download.
